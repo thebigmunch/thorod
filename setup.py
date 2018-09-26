@@ -33,6 +33,7 @@ setup(
 		'click-default-group>=1.2',
 		'pendulum>=2.0',
 		'sphinx-click>=1.0',
+		'sortedcontainers>=2.0'
 		'toml>=0.9.4',
 		'tqdm>=4.19',
 	],
