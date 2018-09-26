@@ -62,11 +62,13 @@ def output_abbreviations(conf):
 
 		return '\n'.ljust(17).join(lines)
 
-	default_abbrs = abbr_list(DEFAULT_ABBRS)
+	auto_abbrs = abbr_list({'open': 'All default trackers in a random tiered order.', 'random': 'A single random default tracker.'})
+	default_abbrs = abbr_list({abbr: tracker for abbr, tracker in DEFAULT_ABBRS.items() if abbr not in ['open', 'random']})
 	user_abbrs = abbr_list(conf['trackers'])
 
 	summary = (
 		f"Config File:    {CONFIG_FILE}\n\n"
+		f"Auto:           {auto_abbrs}\n\n"
 		f"Default:        {default_abbrs}\n\n"
 		f"User:           {user_abbrs}"
 	)
