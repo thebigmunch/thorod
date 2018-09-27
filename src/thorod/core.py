@@ -22,7 +22,7 @@ def create_dir_info_dict(files, data_size, piece_size, private, source, include_
 	pieces = bytes()
 
 	if show_progress:
-		print("Hashing files:\n")
+		print("\n")
 		progress_bar = tqdm(
 			total=data_size, unit='', unit_scale=True,
 			leave=True, dynamic_ncols=True,
@@ -92,7 +92,7 @@ def create_file_info_dict(files, data_size, piece_size, private, source, include
 	md5sum = md5() if include_md5 else None
 
 	if show_progress:
-		print("Hashing file:\n")
+		print("\n")
 		progress_bar = tqdm(
 			total=data_size, unit='', unit_scale=True,
 			leave=True, dynamic_ncols=True,
