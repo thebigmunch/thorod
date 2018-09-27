@@ -7,6 +7,22 @@
 
 Thorod means torrent (of water) in the Tolkien Elvish language of Sindarin.
 
+## Why use thorod?
+
+There are many CLI torrent utilities out there, so here are some unique or notable features of thorod:
+
+* All torrents are unique; a random salt is added to all created/xseeded torrents.
+* Supports trackers on the same tier.
+* Type less with tracker abbreviations.
+	* Includes a number of open public trackers by default.
+	* Includes auto generated open and random abbreviations to help balance load between open public trackers.
+	* Users can list/add/remove their own tracker abbreviations directly from CLI as well as manually editing config file.
+* Generate magnet links on creation or on command.
+* Has an xseed command to generate a cross-seedable torrent without re-hashing files.
+* View information about a torrent file in the terminal, rather than adding it to a torrent client.
+* Simple automatic piece size calculation from 16 KiB to 32 MiB on by default. Users can set manually by option.
+* Supports source key in info dict used by private trackers.
+
 
 ## Installation
 
