@@ -1,7 +1,7 @@
 [tool.poetry]
 name = "thorod"
 description = "A CLI utility for torrent creation and manipulation."
-version = "1.0.0"
+version = "1.1.0"
 
 license = "MIT"
 
