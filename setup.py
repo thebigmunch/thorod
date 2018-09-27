@@ -31,6 +31,8 @@ setup(
 		'appdirs>=1.4',
 		'click>=6.0',
 		'click-default-group>=1.2',
+		'colorama>=0.3.9',
+		'crayons>=0.1.2',
 		'pendulum>=2.0',
 		'sphinx-click>=1.0',
 		'sortedcontainers>=2.0'
