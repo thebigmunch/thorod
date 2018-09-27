@@ -4,6 +4,8 @@ import math
 import os
 
 import click
+import colorama
+import crayons
 import pendulum
 from click_default_group import DefaultGroup
 
@@ -18,6 +20,8 @@ from .utils import (
 	calculate_data_size, calculate_piece_size, calculate_torrent_size,
 	convert_cygwin_path, generate_unique_string, get_files, hash_info_dict, humanize_size
 )
+
+colorama.init()
 
 
 # I use Windows Python install from Cygwin or other Unix-like environments on Windows.
@@ -54,9 +58,9 @@ def output_abbreviations(conf):
 		lines = []
 		for abbr, tracker in abbrs.items():
 			if isinstance(tracker, list):
-				line = f'{abbr}: ' + '\n'.ljust(23).join(track for track in tracker)
+				line = f'{crayons.cyan(abbr)}: ' + '\n'.ljust(23).join(crayons.magenta(track) for track in tracker)
 			else:
-				line = f'{abbr}: {tracker}'
+				line = f'{crayons.cyan(abbr)}: {crayons.magenta(tracker)}'
 
 			lines.append(line)
 
@@ -67,10 +71,11 @@ def output_abbreviations(conf):
 	user_abbrs = abbr_list(conf['trackers'])
 
 	summary = (
-		f"Config File:    {CONFIG_FILE}\n\n"
-		f"Auto:           {auto_abbrs}\n\n"
-		f"Default:        {default_abbrs}\n\n"
-		f"User:           {user_abbrs}"
+		f"\n"
+		f"{crayons.yellow('Config File')}:    {crayons.cyan(CONFIG_FILE)}\n\n"
+		f"{crayons.yellow('Auto')}:           {auto_abbrs}\n\n"
+		f"{crayons.yellow('Default')}:        {default_abbrs}\n\n"
+		f"{crayons.yellow('User')}:           {user_abbrs}"
 	)
 
 	click.echo(summary)
@@ -100,20 +105,20 @@ def output_summary(torrent_info, torrent_file, show_files=False):
 	magnet_link = generate_magnet_link(torrent_info, torrent_file)
 
 	summary = (
-		f'\n'
-		f'Info Hash:      {info_hash}\n'
-		f'Torrent Name:   {torrent_file}\n'
-		f'Data Size:      {humanize_size(data_size, precision=2)}\n'
-		f'Piece Size:     {humanize_size(piece_size)}\n'
-		f'Piece Count:    {piece_count}\n'
-		f'Private:        {private}\n'
-		f'Creation Date:  {creation_date}\n'
-		f'Created By:     {created_by}\n'
-		f'Comment:        {comment}\n'
-		f'Source:         {source}\n'
-		f'Trackers:       {tracker_list}\n\n'
+		f"\n"
+		f"{crayons.yellow('Info Hash')}:      {crayons.cyan(info_hash)}\n"
+		f"{crayons.yellow('Torrent Name')}:   {crayons.cyan(torrent_file)}\n"
+		f"{crayons.yellow('Data Size')}:      {crayons.cyan(humanize_size(data_size, precision=2))}\n"
+		f"{crayons.yellow('Piece Size')}:     {crayons.cyan(humanize_size(piece_size))}\n"
+		f"{crayons.yellow('Piece Count')}:    {crayons.cyan(piece_count)}\n"
+		f"{crayons.yellow('Private')}:        {crayons.cyan(private)}\n"
+		f"{crayons.yellow('Creation Date')}:  {crayons.cyan(creation_date)}\n"
+		f"{crayons.yellow('Created By')}:     {crayons.cyan(created_by)}\n"
+		f"{crayons.yellow('Comment')}:        {crayons.cyan(comment)}\n"
+		f"{crayons.yellow('Source')}:         {crayons.cyan(source)}\n"
+		f"{crayons.yellow('Trackers')}:       {crayons.cyan(tracker_list)}\n\n"
 
-		f'Magnet:         {magnet_link}'
+		f"{crayons.yellow('Magnet')}:         {crayons.cyan(magnet_link)}"
 	)
 
 	if show_files:
@@ -126,9 +131,9 @@ def output_summary(torrent_info, torrent_file, show_files=False):
 
 		pad = len(max([size for size, _ in file_infos], key=len))
 
-		summary += f'\n\nFiles:\n\n'
+		summary += f"\n\n{crayons.yellow('Files')}:\n\n"
 		for size, path in file_infos:
-			summary += f'    {size:<{pad}} -- {path}\n'
+			summary += f"    {crayons.white(f'{size:<{pad}}')}  {crayons.green(path)}\n"
 
 	click.echo(summary)
 
