@@ -1,5 +1,15 @@
 # Change Log
 
+Notable changes to this project based on the [Keep a Changelog](https://keepachangelog.com) format.
+This project adheres to [Semantic Versioning](https://semver.org).
+
+
+## [Unreleased](https://github.com/thebigmunch/thorod/tree/master)
+
+[Commits](https://github.com/thebigmunch/thorod/compare/1.1.0...master)
+
+
+
 
 ## [1.1.0](https://github.com/thebigmunch/thorod/releases/tag/1.1.0) (2018-09-27)
 
