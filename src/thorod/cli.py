@@ -24,8 +24,8 @@ from .utils import (
 colorama.init()
 
 
-# I use Windows Python install from Cygwin or other Unix-like environments on Windows.
-# This custom click type converts Unix-style paths to Windows-style paths in these cases.
+# I use Windows Python install from Cygwin.
+# This custom click type converts Unix-style paths to Windows-style paths in this case.
 class CustomPath(click.Path):
 	def convert(self, value, param, ctx):
 		if os.name == 'nt' and CYGPATH_RE.match(value):

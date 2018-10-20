@@ -66,5 +66,5 @@ target/
 .python-version
 
 # poetry
-pyproject.lock
+poetry.lock
 
