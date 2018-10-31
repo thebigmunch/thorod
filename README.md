@@ -30,7 +30,8 @@ There are many CLI torrent utilities out there, so here are some unique or notab
 
 ## Usage
 
-See the [docs](https://thorod.readthedocs.io).
+For the release version, see the [stable docs](https://thorod.readthedocs.io/en/stable/).  
+For the development version, see the [latest docs](https://thorod.readthedocs.io/en/latest/).
 
 
 ## Appreciation
