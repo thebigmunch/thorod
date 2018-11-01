@@ -1,5 +1,7 @@
 # thorod
 
+[![Read the Docs](https://img.shields.io/readthedocs/thorod.svg)](https://thorod.readthedocs.io)
+
 [thorod](https://github.com/thebigmunch/thorod) is a CLI utility for torrent creation and manipulation.
 
 ## What's a thorod?
