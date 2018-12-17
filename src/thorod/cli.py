@@ -272,7 +272,10 @@ def torrent(
 	if output:
 		torrent_file = output
 	else:
-		torrent_file = os.path.basename(os.path.abspath(input_path))
+		if os.path.isfile(input_path):
+			torrent_file = os.path.basename(os.path.abspath(input_path))
+		else:
+			torrent_file = os.path.dirname(os.path.abspath(input_path))
 
 	torrent_file += '.torrent'
 

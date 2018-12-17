@@ -8,7 +8,9 @@ This project adheres to [Semantic Versioning](https://semver.org).
 
 [Commits](https://github.com/thebigmunch/thorod/compare/1.1.0...master)
 
+### Fixed
 
+* Torrent file naming when input path is a directory.
 
 
 ## [1.1.0](https://github.com/thebigmunch/thorod/releases/tag/1.1.0) (2018-09-27)
