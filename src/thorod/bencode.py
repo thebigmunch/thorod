@@ -1,5 +1,6 @@
 """A simple bencoding implementation with standard API."""
 
+from collections.abc import Mapping
 from io import SEEK_CUR, BytesIO
 
 
@@ -87,7 +88,7 @@ def _bencode(data):
 		return _bytes(len(data)) + b':' + data
 	elif isinstance(data, list):
 		return b'l' + b''.join(_bencode(d) for d in data) + b'e'
-	elif isinstance(data, dict):
+	elif isinstance(data, Mapping):
 		enc_dict = bytes()
 
 		for key in sorted(data):

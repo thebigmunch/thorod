@@ -3,6 +3,7 @@ import os
 import random
 from hashlib import md5, sha1
 
+from sortedcontainers import SortedDict
 from tqdm import tqdm
 
 from . import bencode
@@ -16,7 +17,7 @@ tqdm.format_sizeof = functools.partial(humanize_size, precision=2)
 def create_dir_info_dict(files, data_size, piece_size, private, source, include_md5, show_progress=True):
 	base_path = os.path.commonpath(files)
 
-	info_dict = {}
+	info_dict = SortedDict()
 	file_infos = []
 	data = bytes()
 	pieces = bytes()
@@ -30,7 +31,7 @@ def create_dir_info_dict(files, data_size, piece_size, private, source, include_
 		)
 
 	for file in files:
-		file_dict = {}
+		file_dict = SortedDict()
 		length = 0
 
 		md5sum = md5() if include_md5 else None
@@ -85,7 +86,7 @@ def create_dir_info_dict(files, data_size, piece_size, private, source, include_
 
 
 def create_file_info_dict(files, data_size, piece_size, private, source, include_md5, show_progress=True):
-	info_dict = {}
+	info_dict = SortedDict()
 	pieces = bytes()
 	length = 0
 

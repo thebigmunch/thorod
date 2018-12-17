@@ -8,6 +8,7 @@ import colorama
 import crayons
 import pendulum
 from click_default_group import DefaultGroup
+from sortedcontainers import SortedDict
 
 from . import __title__, __version__
 from .config import ABBRS, CONFIG_FILE, DEFAULT_ABBRS, get_config, write_config_file
@@ -244,7 +245,7 @@ def torrent(
 	else:
 		piece_size = PIECE_SIZES[piece_size]
 
-	torrent_info = {}
+	torrent_info = SortedDict()
 
 	if os.path.isdir(input_path):
 		info_dict = create_dir_info_dict(files, data_size, piece_size, private, source, md5, show_progress=show_progress)
