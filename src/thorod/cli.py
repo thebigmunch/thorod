@@ -87,12 +87,16 @@ def output_summary(torrent_info, show_files=False):
 	info_hash = hash_info_dict(torrent_info['info'])
 	private = 'Yes' if torrent_info['info'].get('private') == 1 else 'No'
 
+	announce_list = None
 	if 'announce-list' in torrent_info:
 		announce_list = torrent_info['announce-list']
-	else:
+	elif 'announce' in torrent_info:
 		announce_list = [[torrent_info['announce']]]
 
-	tracker_list = '\n\n'.ljust(18).join('\n'.ljust(17).join(tracker for tracker in tier) for tier in announce_list)
+	if announce_list:
+		tracker_list = '\n\n'.ljust(18).join('\n'.ljust(17).join(tracker for tracker in tier) for tier in announce_list)
+	else:
+		tracker_list = None
 
 	data_size = calculate_torrent_size(torrent_info)
 	piece_size = torrent_info['info']['piece length']
@@ -222,7 +226,7 @@ def magnet(torrent_file):
 @click.option('--show-files', is_flag=True, default=False, help="Show list of files in the summary.")
 @click.option('--show-progress/--hide-progress', is_flag=True, default=True, help="Show/hide hashing progress bar.")
 @click.argument('input-path', type=CustomPath(exists=True), required=True)
-@click.argument('trackers', nargs=-1, callback=replace_abbreviations, required=True)
+@click.argument('trackers', nargs=-1, callback=replace_abbreviations)
 def torrent(
 	created_by, comment, source, private, piece_size, output, md5, max_depth,
 	show_files, show_progress, input_path, trackers):
@@ -247,6 +251,9 @@ def torrent(
 
 	torrent_info = SortedDict()
 
+	if not trackers:
+		private = False
+
 	if os.path.isdir(input_path):
 		info_dict = create_dir_info_dict(files, data_size, piece_size, private, source, md5, show_progress=show_progress)
 	elif os.path.isfile(input_path):
@@ -254,10 +261,11 @@ def torrent(
 
 	torrent_info['info'] = info_dict
 
-	torrent_info['announce'] = trackers[0][0]
+	if trackers:
+		torrent_info['announce'] = trackers[0][0]
 
-	if len(trackers) > 1 or len(trackers[0]) > 1:
-		torrent_info['announce-list'] = trackers
+		if len(trackers) > 1 or len(trackers[0]) > 1:
+			torrent_info['announce-list'] = trackers
 
 	if created_by:
 		torrent_info['created by'] = created_by
@@ -319,16 +327,22 @@ def xseed(created_by, comment, source, private, output, torrent_file, trackers):
 
 	torrent_info['info']['salt'] = generate_unique_string()
 
-	if private is not None:
+	if not trackers:
+		torrent_info['info']['private'] = 0
+	elif private is not None:
 		torrent_info['info']['private'] = 1 if private else 0
 
 	if source:
 		torrent_info['info']['source'] = source
 
-	torrent_info['announce'] = trackers[0][0]
+	if trackers:
+		torrent_info['announce'] = trackers[0][0]
 
-	if len(trackers) > 1 or len(trackers[0]) > 1:
-		torrent_info['announce-list'] = trackers
+		if len(trackers) > 1 or len(trackers[0]) > 1:
+			torrent_info['announce-list'] = trackers
+	else:
+		torrent_info.pop('announce', None)
+		torrent_info.pop('announce-list', None)
 
 	if created_by:
 		torrent_info['created by'] = created_by

@@ -8,6 +8,10 @@ This project adheres to [Semantic Versioning](https://semver.org).
 
 [Commits](https://github.com/thebigmunch/thorod/compare/1.1.0...master)
 
+### Added
+
+* Trackerless torrent support.
+
 ### Fixed
 
 * Torrent file naming when input path is a directory.
