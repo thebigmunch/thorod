@@ -82,7 +82,8 @@ def output_abbreviations(conf):
 	click.echo(summary)
 
 
-def output_summary(torrent_info, torrent_file, show_files=False):
+def output_summary(torrent_info, show_files=False):
+	torrent_name = torrent_info['info']['name']
 	info_hash = hash_info_dict(torrent_info['info'])
 	private = 'Yes' if torrent_info['info'].get('private') == 1 else 'No'
 
@@ -103,12 +104,12 @@ def output_summary(torrent_info, torrent_file, show_files=False):
 	comment = torrent_info.get('comment', '')
 	source = torrent_info.get('source', '')
 
-	magnet_link = generate_magnet_link(torrent_info, torrent_file)
+	magnet_link = generate_magnet_link(torrent_info)
 
 	summary = (
 		f"\n"
 		f"{crayons.yellow('Info Hash')}:      {crayons.cyan(info_hash)}\n"
-		f"{crayons.yellow('Torrent Name')}:   {crayons.cyan(torrent_file)}\n"
+		f"{crayons.yellow('Torrent Name')}:   {crayons.cyan(torrent_name)}\n"
 		f"{crayons.yellow('Data Size')}:      {crayons.cyan(humanize_size(data_size, precision=2))}\n"
 		f"{crayons.yellow('Piece Size')}:     {crayons.cyan(humanize_size(piece_size))}\n"
 		f"{crayons.yellow('Piece Count')}:    {crayons.cyan(piece_count)}\n"
@@ -181,7 +182,7 @@ def info(show_files, torrent_file):
 
 	torrent_info = read_torrent_file(torrent_file)
 
-	output_summary(torrent_info, torrent_file, show_files=show_files)
+	output_summary(torrent_info, show_files=show_files)
 
 
 @thorod.command()
@@ -190,8 +191,7 @@ def magnet(torrent_file):
 	"""Generate a magnet link from a torrent file."""
 
 	torrent_info = read_torrent_file(torrent_file)
-
-	magnet_link = generate_magnet_link(torrent_info, torrent_file)
+	magnet_link = generate_magnet_link(torrent_info)
 
 	output = f"\nMagnet:         {magnet_link}"
 
@@ -281,7 +281,7 @@ def torrent(
 
 	write_torrent_file(torrent_file, torrent_info)
 
-	output_summary(torrent_info, torrent_file, show_files=show_files)
+	output_summary(torrent_info, show_files=show_files)
 
 
 @thorod.command()
@@ -347,7 +347,7 @@ def xseed(created_by, comment, source, private, output, torrent_file, trackers):
 
 	write_torrent_file(xseed_torrent, torrent_info)
 
-	output_summary(torrent_info, torrent_file)
+	output_summary(torrent_info)
 
 
 @thorod.group(cls=DefaultGroup, default='list', default_if_no_args=True)

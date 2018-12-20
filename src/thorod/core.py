@@ -137,9 +137,8 @@ def create_file_info_dict(files, data_size, piece_size, private, source, include
 	return info_dict
 
 
-def generate_magnet_link(torrent_info, torrent_file):
-	torrent_name = torrent_file.replace('.torrent', '')
-
+def generate_magnet_link(torrent_info):
+	torrent_name = torrent_info['info']['name']
 	info_hash = hash_info_dict(torrent_info['info'])
 	data_size = calculate_torrent_size(torrent_info)
 
