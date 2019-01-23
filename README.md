@@ -1,7 +1,9 @@
 # thorod
 
-[![Read the Docs - Stable](https://img.shields.io/readthedocs/thorod/stable.svg?label=Read%20the%20Docs%20%28Stable%29)](https://thorod.readthedocs.io/en/stable/)
-[![Read the Docs - Latest](https://img.shields.io/readthedocs/thorod/latest.svg?label=Read%20the%20Docs%20%28Latest%29)](https://thorod.readthedocs.io/en/latest/)
+[![PyPI](https://img.shields.io/pypi/v/thorod.svg?label=PyPI)](https://pypi.org/project/thorod/)
+![](https://img.shields.io/badge/Python-3.6%2B-blue.svg)  
+[![Docs - Stable](https://img.shields.io/readthedocs/thorod/stable.svg?label=Docs%20%28Stable%29)](https://thorod.readthedocs.io/en/stable/)
+[![Docs - Latest](https://img.shields.io/readthedocs/thorod/latest.svg?label=Docs%20%28Latest%29)](https://thorod.readthedocs.io/en/latest/)
 
 [thorod](https://github.com/thebigmunch/thorod) is a CLI utility for torrent creation and manipulation.
 
