@@ -30,7 +30,7 @@ There are many CLI torrent utilities out there, so here are some unique or notab
 
 ## Installation
 
-``pip install thorod``
+``pip install -U thorod``
 
 
 ## Usage
