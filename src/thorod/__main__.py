@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-from .cli import thorod
+from . import cli
 
 if __name__ == '__main__':
-	thorod()
+	cli.run()

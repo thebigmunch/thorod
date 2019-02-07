@@ -1,49 +1,66 @@
-import os
-import random
 from collections import ChainMap
+from collections.abc import Mapping
+from pathlib import Path
 
 import appdirs
-import toml
 from sortedcontainers import SortedDict
+from tomlkit.toml_document import TOMLDocument
+from tomlkit.toml_file import TOMLFile
 
 from .__about__ import __author__, __title__
+from .constants import DEFAULT_ABBRS
+from .utils import DictMixin
 
-CONFIG_DIR = appdirs.user_config_dir(__title__, __author__)
-CONFIG_FILE = os.path.join(CONFIG_DIR, 'thorod.toml')
+COMMAND_KEYS = {
+	'abbrs',
+	'create',
+	'info',
+	'magnet',
+	'xseed',
+}
 
-DEFAULT_ABBRS = SortedDict({
-	'coppersurfer': 'udp://tracker.coppersurfer.tk:6969/announce',
-	'demonii': 'udp://open.demonii.com:1337',
-	'desync': 'udp://exodus.desync.com:6969',
-	'explodie': 'udp://explodie.org:6969',
-	'internetwarriors': 'udp://tracker.internetwarriors.net:1337/announce',
-	'leechers-paradise': 'udp://tracker.leechers-paradise.org:6969/announce',
-	'mgtracker': 'udp://mgtracker.org:6969/announce',
-	'opentrackr': 'udp://tracker.opentrackr.org:1337',
-	'pirateparty': 'udp://tracker.pirateparty.gr:6969/announce',
-	'sktorrent': 'udp://tracker.sktorrent.net:6969/announce',
-	'zer0day': 'udp://tracker.zer0day.to:1337/announce'
-})
-
-default_trackers = list(DEFAULT_ABBRS.values())
-random.shuffle(default_trackers)
-
-DEFAULT_ABBRS['open'] = default_trackers
-DEFAULT_ABBRS['random'] = random.choice(default_trackers)
+CONFIG_PATH = Path(appdirs.user_config_dir(__title__, __author__), 'thorod.toml')
 
 
-def get_config():
-	config = read_config_file()
+def convert_default_keys(item):
+	if isinstance(item, Mapping):
+		converted = item.__class__()
+		for k, v in item.items():
+			converted[k.lstrip('-').replace('-', '_')] = convert_default_keys(v)
 
-	return config
+		return converted
+	else:
+		return item
+
+
+def get_defaults(command):
+	config_defaults = read_config_file().get('defaults')
+	print(config_defaults)
+	defaults = DictMixin()
+
+	if config_defaults:
+		defaults.update(
+			(k, v)
+			for k, v in config_defaults.items()
+			if k not in COMMAND_KEYS
+		)
+
+		if command in config_defaults:
+			defaults.update(
+				(k, v)
+				for k, v in config_defaults[command[0]].items()
+				if k not in COMMAND_KEYS
+			)
+
+	return convert_default_keys(defaults)
 
 
 def read_config_file():
+	config_file = TOMLFile(CONFIG_PATH)
 	try:
-		with open(CONFIG_FILE) as conf:
-			config = toml.load(conf, SortedDict)
+		config = config_file.read()
 	except FileNotFoundError:
-		config = SortedDict()
+		config = TOMLDocument()
 
 	if 'trackers' not in config:
 		config['trackers'] = SortedDict()
@@ -54,10 +71,11 @@ def read_config_file():
 
 
 def write_config_file(config):
-	os.makedirs(CONFIG_DIR, exist_ok=True)
+	CONFIG_PATH.parent.mkdir(parents=True, exist_ok=True)
+	CONFIG_PATH.touch()
 
-	with open(CONFIG_FILE, 'w') as conf:
-		toml.dump(config, conf)
+	config_file = TOMLFile(CONFIG_PATH)
+	config_file.write(config)
 
 
-ABBRS = ChainMap(DEFAULT_ABBRS, get_config()['trackers'])
+ABBRS = ChainMap(DEFAULT_ABBRS, read_config_file()['trackers'])

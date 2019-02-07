@@ -1,150 +1,78 @@
-"""Command line interface of thorod."""
-
+import argparse
 import math
 import os
-
-import click
-import colorama
-import crayons
-import pendulum
-from click_default_group import DefaultGroup
-from sortedcontainers import SortedDict
+from pathlib import Path
 
 from . import __title__, __version__
-from .config import ABBRS, CONFIG_FILE, DEFAULT_ABBRS, get_config, write_config_file
-from .constants import CYGPATH_RE, PIECE_SIZES, PIECE_SIZE_STRINGS
-from .core import (
-	create_dir_info_dict, create_file_info_dict, generate_magnet_link,
-	read_torrent_file, write_torrent_file
+from .commands import (
+	do_abbrs,
+	do_create,
+	do_info,
+	do_magnet,
+	do_xseed,
+)
+from .config import (
+	ABBRS,
+	get_defaults,
+)
+from .constants import (
+	DEFAULT_ABBRS,
+	PIECE_SIZE_STRINGS,
+	UNIX_PATH_RE,
 )
 from .utils import (
-	calculate_data_size, calculate_piece_size, calculate_torrent_size,
-	convert_cygwin_path, generate_unique_string, get_files, hash_info_dict, humanize_size
+	DictMixin,
+	convert_unix_path,
 )
 
-colorama.init()
 
+class Namespace(DictMixin):
+	pass
+
+
+class UsageHelpFormatter(argparse.RawTextHelpFormatter):
+	def add_usage(self, usage, actions, groups, prefix="Usage: "):
+		super().add_usage(usage, actions, groups, prefix)
+
+
+# Removes the command list while leaving the usage metavar intact.
+class SubcommandHelpFormatter(UsageHelpFormatter):
+	def _format_action(self, action):
+		parts = super()._format_action(action)
+		if action.nargs == argparse.PARSER:
+			parts = "\n".join(parts.split("\n")[1:])
+		return parts
+
+
+#########
+# Utils #
+#########
 
 # I use Windows Python install from Cygwin.
 # This custom click type converts Unix-style paths to Windows-style paths in this case.
-class CustomPath(click.Path):
-	def convert(self, value, param, ctx):
-		if os.name == 'nt' and CYGPATH_RE.match(value):
-			value = convert_cygwin_path(value)
+def custom_path(value):
+	if os.name == 'nt' and UNIX_PATH_RE.match(str(value)):
+		value = Path(convert_unix_path(str(value)))
 
-		return super().convert(value, param, ctx)
-
-
-def is_torrent_file(ctx, param, value):
-	if not value.endswith('.torrent'):
-		click.confirm(
-			f"Is '{value}' a torrent file?",
-			abort=True
-		)
+	value = Path(value)
 
 	return value
 
 
-def is_usable_abbr(ctx, param, value):
+def default_to_cwd():
+	return Path.cwd()
+
+
+def is_usable_abbr(value):
 	if value in DEFAULT_ABBRS:
-		raise click.BadParameter(
-			f"'{value}' is a default abbreviation. Please choose another.", ctx=ctx, param=param
+		raise argparse.ArgumentTypeError(
+			f"'{value}' is a default abbreviation. Please choose another."
 		)
 
 	return value
 
 
-def output_abbreviations(conf):
-	def abbr_list(abbrs):
-		lines = []
-		for abbr, tracker in abbrs.items():
-			if isinstance(tracker, list):
-				line = f'{crayons.cyan(abbr)}: ' + '\n'.ljust(23).join(crayons.magenta(track) for track in tracker)
-			else:
-				line = f'{crayons.cyan(abbr)}: {crayons.magenta(tracker)}'
-
-			lines.append(line)
-
-		return '\n'.ljust(17).join(lines)
-
-	auto_abbrs = abbr_list({'open': 'All default trackers in a random tiered order.', 'random': 'A single random default tracker.'})
-	default_abbrs = abbr_list({abbr: tracker for abbr, tracker in DEFAULT_ABBRS.items() if abbr not in ['open', 'random']})
-	user_abbrs = abbr_list(conf['trackers'])
-
-	summary = (
-		f"\n"
-		f"{crayons.yellow('Config File')}:    {crayons.cyan(CONFIG_FILE)}\n\n"
-		f"{crayons.yellow('Auto')}:           {auto_abbrs}\n\n"
-		f"{crayons.yellow('Default')}:        {default_abbrs}\n\n"
-		f"{crayons.yellow('User')}:           {user_abbrs}"
-	)
-
-	click.echo(summary)
-
-
-def output_summary(torrent_info, show_files=False):
-	torrent_name = torrent_info['info']['name']
-	info_hash = hash_info_dict(torrent_info['info'])
-	private = 'Yes' if torrent_info['info'].get('private') == 1 else 'No'
-
-	announce_list = None
-	if 'announce-list' in torrent_info:
-		announce_list = torrent_info['announce-list']
-	elif 'announce' in torrent_info:
-		announce_list = [[torrent_info['announce']]]
-
-	if announce_list:
-		tracker_list = '\n\n'.ljust(18).join('\n'.ljust(17).join(tracker for tracker in tier) for tier in announce_list)
-	else:
-		tracker_list = None
-
-	data_size = calculate_torrent_size(torrent_info)
-	piece_size = torrent_info['info']['piece length']
-	piece_count = math.ceil(data_size / piece_size)
-
-	tz = pendulum.tz.local_timezone()
-	creation_date = pendulum.from_timestamp(torrent_info['creation date'], tz).format('YYYY-MM-DD HH:mm:ss Z')
-	created_by = torrent_info.get('created by', '')
-	comment = torrent_info.get('comment', '')
-	source = torrent_info.get('source', '')
-
-	magnet_link = generate_magnet_link(torrent_info)
-
-	summary = (
-		f"\n"
-		f"{crayons.yellow('Info Hash')}:      {crayons.cyan(info_hash)}\n"
-		f"{crayons.yellow('Torrent Name')}:   {crayons.cyan(torrent_name)}\n"
-		f"{crayons.yellow('Data Size')}:      {crayons.cyan(humanize_size(data_size, precision=2))}\n"
-		f"{crayons.yellow('Piece Size')}:     {crayons.cyan(humanize_size(piece_size))}\n"
-		f"{crayons.yellow('Piece Count')}:    {crayons.cyan(piece_count)}\n"
-		f"{crayons.yellow('Private')}:        {crayons.cyan(private)}\n"
-		f"{crayons.yellow('Creation Date')}:  {crayons.cyan(creation_date)}\n"
-		f"{crayons.yellow('Created By')}:     {crayons.cyan(created_by)}\n"
-		f"{crayons.yellow('Comment')}:        {crayons.cyan(comment)}\n"
-		f"{crayons.yellow('Source')}:         {crayons.cyan(source)}\n"
-		f"{crayons.yellow('Trackers')}:       {crayons.cyan(tracker_list)}\n\n"
-
-		f"{crayons.yellow('Magnet')}:         {crayons.cyan(magnet_link)}"
-	)
-
-	if show_files:
-		file_infos = []
-		if 'files' in torrent_info['info']:
-			for f in torrent_info['info']['files']:
-				file_infos.append((humanize_size(f['length'], precision=2), os.path.join(*f['path'])))
-		else:
-			file_infos.append((humanize_size(torrent_info['info']['length'], precision=2), torrent_info['info']['name']))
-
-		pad = len(max([size for size, _ in file_infos], key=len))
-
-		summary += f"\n\n{crayons.yellow('Files')}:\n\n"
-		for size, path in file_infos:
-			summary += f"    {crayons.white(f'{size:<{pad}}')}  {crayons.green(path)}\n"
-
-	click.echo(summary)
-
-
-def replace_abbreviations(ctx, param, value):
+def replace_abbreviations(value):
 	announce_list = []
 
 	def process_trackers(trackers):
@@ -167,244 +95,541 @@ def replace_abbreviations(ctx, param, value):
 	return announce_list
 
 
-CONTEXT_SETTINGS = dict(max_content_width=100, help_option_names=['-h', '--help'])
+########
+# Meta #
+########
 
-
-@click.group(cls=DefaultGroup, default='torrent', context_settings=CONTEXT_SETTINGS)
-@click.version_option(__version__, '-V', '--version', prog_name=__title__, message="%(prog)s %(version)s")
-def thorod():
-	"""Collection of torrent creation utilities."""
-
-	pass
-
-
-@thorod.command()
-@click.option('--show-files', is_flag=True, default=False, help="Show list of files in the torrent.")
-@click.argument('torrent_file', type=CustomPath(exists=True), callback=is_torrent_file)
-def info(show_files, torrent_file):
-	"""Output information about a torrent file."""
-
-	torrent_info = read_torrent_file(torrent_file)
-
-	output_summary(torrent_info, show_files=show_files)
-
-
-@thorod.command()
-@click.argument('torrent_file', type=CustomPath(exists=True), callback=is_torrent_file)
-def magnet(torrent_file):
-	"""Generate a magnet link from a torrent file."""
-
-	torrent_info = read_torrent_file(torrent_file)
-	magnet_link = generate_magnet_link(torrent_info)
-
-	output = f"\nMagnet:         {magnet_link}"
-
-	click.echo(output)
-
-
-@thorod.command()
-@click.option(
-	'--created-by', metavar='CREATOR', default=f'{__title__} {__version__}',
-	help=f"Set created by field.\nDefaults to {__title__} {__version__}."
+meta = argparse.ArgumentParser(
+	add_help=False
 )
-@click.option('-c', '--comment', metavar='COMMENT', help="Set comment field.")
-@click.option('-s', '--source', metavar='SOURCE', help="Set source field.")
-@click.option('-p/-P', '--private/--public', is_flag=True, default=False, help="Set private flag.")
-@click.option(
-	'--piece-size', metavar='SIZE', default='auto', type=click.Choice(PIECE_SIZE_STRINGS),
-	help=f"Set piece size. Defaults to 'auto'.\n({', '.join(PIECE_SIZE_STRINGS)})"
+
+meta_options = meta.add_argument_group("Options")
+meta_options.add_argument(
+	'-h', '--help',
+	action='help',
+	help="Display help."
 )
-@click.option(
-	'-o', '--output', metavar='NAME',
-	help="Set name of torrent file.\nDefaults to input file or directory name."
+meta_options.add_argument(
+	'-V', '--version',
+	action='version',
+	version=f"{__title__} {__version__}",
+	help="Output version."
 )
-@click.option('--md5', is_flag=True, default=False, help="")
-@click.option(
-	'--max-depth', metavar='DEPTH', type=int,
-	help="Set maximum depth of recursion when scanning for files.\nDefault is infinite recursion."
+
+
+########
+# Show #
+########
+
+# Files
+
+show_files = argparse.ArgumentParser(
+	argument_default=argparse.SUPPRESS,
+	add_help=False
 )
-@click.option('--show-files', is_flag=True, default=False, help="Show list of files in the summary.")
-@click.option('--show-progress/--hide-progress', is_flag=True, default=True, help="Show/hide hashing progress bar.")
-@click.argument('input-path', type=CustomPath(exists=True), required=True)
-@click.argument('trackers', nargs=-1, callback=replace_abbreviations)
-def torrent(
-	created_by, comment, source, private, piece_size, output, md5, max_depth,
-	show_files, show_progress, input_path, trackers):
-	"""Create a torrent file.
 
-	Tracker tiers are separated by a space.
-	Trackers on the same tier should be quoted and separated with a carat (^)
+show_files_options = show_files.add_argument_group("Show")
+show_files_options.add_argument(
+	'--show-files',
+	action='store_true',
+	help="Show files in the summary."
+)
+show_files_options.add_argument(
+	'--hide-files',
+	action='store_true',
+	help="Don't show files in the summary."
+)
 
-	Example: 'tracker1^tracker2' tracker3
-	"""
+# Progress
 
-	if max_depth is None:
-		max_depth = float('inf')
+show_progress = argparse.ArgumentParser(
+	argument_default=argparse.SUPPRESS,
+	add_help=False,
+)
 
-	files = list(get_files(input_path, max_depth))
-	data_size = calculate_data_size(files)
+show_progress_options = show_progress.add_argument_group("Show")
+show_progress_options.add_argument(
+	'--show-progress',
+	action='store_true',
+	help="Show hashing progress bar."
+)
+show_progress_options.add_argument(
+	'--hide-progress',
+	action='store_true',
+	help="Hide hashing progress bar."
+)
 
-	if piece_size == 'auto':
-		piece_size = calculate_piece_size(data_size)
+
+#########
+# Local #
+#########
+
+local = argparse.ArgumentParser(
+	argument_default=argparse.SUPPRESS,
+	add_help=False
+)
+local_options = local.add_argument_group("Local")
+local_options.add_argument(
+	'--no-recursion',
+	action='store_true',
+	help=(
+		"Disable recursion when scanning for local files.\n"
+		"Recursion is enabled by default."
+	)
+)
+local_options.add_argument(
+	'--max-depth',
+	metavar='DEPTH',
+	type=int,
+	help=(
+		"Set maximum depth of recursion when scanning for local files.\n"
+		"Default is infinite recursion."
+	)
+)
+
+
+###########
+# Torrent #
+###########
+
+torrent = argparse.ArgumentParser(
+	argument_default=argparse.SUPPRESS,
+	add_help=False
+)
+torrent_options = torrent.add_argument_group("Torrent")
+torrent_options.add_argument(
+	'--piece-size',
+	metavar='SIZE',
+	help=(
+		"Set piece size.\n"
+		"Defaults to automatic calculation.\n"
+		f"({', '.join(PIECE_SIZE_STRINGS)})"
+	)
+)
+torrent_options.add_argument(
+	'--created-by',
+	metavar='CREATOR',
+	help=(
+		"Set created by field.\n"
+		f"Defaults to '{__title__} {__version__}'."
+	)
+)
+torrent_options.add_argument(
+	'-c', '--comment',
+	metavar='COMMENT',
+	help="Set comment field."
+)
+torrent_options.add_argument(
+	'-p', '--private',
+	action='store_true',
+	help="Make torrent private."
+)
+torrent_options.add_argument(
+	'-P', '--public',
+	action='store_true',
+	help="Make torrent public."
+)
+torrent_options.add_argument(
+	'-s', '--source',
+	metavar='SOURCE',
+	help="Set source field."
+)
+torrent_options.add_argument(
+	'--md5',
+	action='store_true',
+	help="Add md5 hash to info dict."
+)
+
+
+##########
+# Output #
+##########
+
+output = argparse.ArgumentParser(
+	argument_default=argparse.SUPPRESS,
+	add_help=False
+)
+
+output_options = output.add_argument_group("Output")
+output_options.add_argument(
+	'-o', '--output',
+	metavar='NAME',
+	help=(
+		"Set name of torrent file.\n"
+		"Defaults to input file or directory name."
+	)
+)
+
+
+#########
+# Input #
+#########
+
+input_ = argparse.ArgumentParser(
+	argument_default=argparse.SUPPRESS,
+	add_help=False
+)
+
+input_options = input_.add_argument_group("Input")
+input_options.add_argument(
+	'input',
+	metavar='PATH',
+	type=lambda p: custom_path(p).resolve(),
+	help="File or directory."
+)
+
+torrent_input = argparse.ArgumentParser(
+	argument_default=argparse.SUPPRESS,
+	add_help=False
+)
+
+torrent_input_options = torrent_input.add_argument_group("Input")
+torrent_input_options.add_argument(
+	'torrent',
+	metavar='TORRENT',
+	type=lambda p: custom_path(p).resolve(),
+	help="Torrent file."
+)
+
+
+############
+# Trackers #
+############
+
+trackers = argparse.ArgumentParser(
+	argument_default=argparse.SUPPRESS,
+	add_help=False
+)
+
+trackers_options = trackers.add_argument_group("Trackers")
+trackers_options.add_argument(
+	'trackers',
+	metavar='TRACKERS',
+	nargs='*',
+	help=(
+		"Tracker tiers are separated by a space.\n"
+		"Trackers on the same tier should be quoted and separated with a carat (^)\n\n"
+		"Example: 'tracker1^tracker2' tracker3"
+	)
+)
+
+
+##########
+# thorod #
+##########
+
+
+thorod = argparse.ArgumentParser(
+	prog='thorod',
+	description="Collection of torrent utilities.",
+	usage=argparse.SUPPRESS,
+	parents=[meta],
+	formatter_class=SubcommandHelpFormatter,
+	add_help=False
+)
+
+subcommands = thorod.add_subparsers(
+	title="Commands",
+	dest='_command',
+	metavar="<command>"
+)
+
+
+#########
+# ABBRS #
+#########
+
+abbrs_command = subcommands.add_parser(
+	'abbrs',
+	description="List/Add/Remove tracker abbreviations.",
+	help="List/Add/Remove tracker abbreviations.",
+	usage=argparse.SUPPRESS,
+	parents=[
+		meta
+	],
+	formatter_class=SubcommandHelpFormatter,
+	add_help=False
+)
+abbrs_command.set_defaults(func=do_abbrs)
+
+abbrs_subcommands = abbrs_command.add_subparsers(
+	title="Commands",
+	dest='_subcommand',
+	metavar="<subcommand>"
+)
+
+abbrs_list_command = abbrs_subcommands.add_parser(
+	'list',
+	description="List tracker abbreviations.",
+	help="List tracker abbreviations.",
+	usage=argparse.SUPPRESS,
+	parents=[
+		meta
+	],
+	formatter_class=UsageHelpFormatter,
+	add_help=False
+)
+
+abbrs_add_command = abbrs_subcommands.add_parser(
+	'add',
+	description="Add tracker abbreviations.",
+	help="Add tracker abbreviations.",
+	usage="thorod abbrs add [ABBREVIATION] [TRACKER]",
+	parents=[
+		meta
+	],
+	formatter_class=UsageHelpFormatter,
+	add_help=False
+)
+abbrs_add_command.add_argument(
+	'abbreviation',
+	metavar='ABBREVIATION',
+	help="Abbreviation to use for tracker."
+)
+abbrs_add_command.add_argument(
+	'tracker',
+	metavar='TRACKER',
+	help="Tracker to abbreviate."
+)
+
+abbrs_remove_command = abbrs_subcommands.add_parser(
+	'remove',
+	description="Remove tracker abbreviations.",
+	help="Remove tracker abbreviations.",
+	usage="thorod abbrs remove [ABBREVIATIONS]...",
+	parents=[
+		meta
+	],
+	formatter_class=UsageHelpFormatter,
+	add_help=False
+)
+abbrs_remove_command.add_argument(
+	'abbreviations',
+	metavar='ABBREVIATIONS',
+	nargs='*',
+	help="Abbreviations to remove."
+)
+
+
+##########
+# Create #
+##########
+
+create_command = subcommands.add_parser(
+	'create',
+	description="Create a torrent file.",
+	help="Create a torrent file.",
+	formatter_class=UsageHelpFormatter,
+	usage="thorod create [OPTIONS] [PATH] [TRACKERS]...",
+	parents=[
+		meta,
+		show_progress,
+		show_files,
+		local,
+		torrent,
+		output,
+		input_,
+		trackers
+	],
+	add_help=False
+)
+create_command.set_defaults(func=do_create)
+
+
+########
+# Info #
+########
+
+info_command = subcommands.add_parser(
+	'info',
+	description="Output information about a torrent file.",
+	help="Output information about a torrent file.",
+	formatter_class=UsageHelpFormatter,
+	usage="thorod info [OPTIONS] [TORRENT]",
+	parents=[
+		meta,
+		show_files,
+		torrent_input
+	],
+	add_help=False
+)
+info_command.set_defaults(func=do_info)
+
+
+##########
+# Magnet #
+##########
+
+magnet_command = subcommands.add_parser(
+	'magnet',
+	description="Generate a magnet link from a torrent file.",
+	help="Generate a magnet link from a torrent file.",
+	formatter_class=UsageHelpFormatter,
+	usage="thorod magnet [OPTIONS] [TORRENT]",
+	parents=[
+		meta,
+		torrent_input
+	],
+	add_help=False
+)
+magnet_command.set_defaults(func=do_magnet)
+
+
+#########
+# xseed #
+#########
+
+xseed_command = subcommands.add_parser(
+	'xseed',
+	description="Copy a torrent for cross-seeding.",
+	help="Copy a torrent for cross-seeding.",
+	formatter_class=UsageHelpFormatter,
+	usage="thorod xseed [OPTIONS] [TORRENT]",
+	parents=[
+		meta,
+		torrent,
+		output,
+		torrent_input,
+		trackers
+	],
+	add_help=False
+)
+xseed_command.set_defaults(func=do_xseed)
+
+
+def parse_args(args=None):
+	return thorod.parse_args(args=args, namespace=Namespace())
+
+
+def check_args(args):
+	if all(
+		option in args
+		for option in ['private', 'public']
+	):
+		raise ValueError("Use one of --private/--public', not both.")
+
+	if all(
+		option in args
+		for option in ['show_progress', 'hide_progress']
+	):
+		raise ValueError("Use one of --show-progress/--hide-progress', not both.")
+
+	if all(
+		option in args
+		for option in ['show_files', 'hide_files']
+	):
+		raise ValueError("Use one of --show-files/--hide-files', not both.")
+
+	if (
+		'torrent' in args
+		and not args.torrent.exists()
+	):
+		raise ValueError(f"'{args.torrent}' does not exist.")
+
+	if (
+		'input' in args
+		and not args.input.exists()
+	):
+		raise ValueError(f"'{args.input}' does not exist.")
+
+	if 'trackers' not in args:
+		args.trackers = []
 	else:
-		piece_size = PIECE_SIZES[piece_size]
+		args.trackers = replace_abbreviations(args.trackers)
 
-	torrent_info = SortedDict()
 
-	if not trackers:
-		private = False
+def default_args(args):
+	defaults = Namespace()
 
-	if os.path.isdir(input_path):
-		info_dict = create_dir_info_dict(files, data_size, piece_size, private, source, md5, show_progress=show_progress)
-	elif os.path.isfile(input_path):
-		info_dict = create_file_info_dict(files, data_size, piece_size, private, source, md5, show_progress=show_progress)
-
-	torrent_info['info'] = info_dict
-
-	if trackers:
-		torrent_info['announce'] = trackers[0][0]
-
-		if len(trackers) > 1 or len(trackers[0]) > 1:
-			torrent_info['announce-list'] = trackers
-
-	if created_by:
-		torrent_info['created by'] = created_by
-
-	if comment:
-		torrent_info['comment'] = comment
-
-	torrent_info['creation date'] = pendulum.now('utc').int_timestamp
-
-	torrent_info['encoding'] = 'UTF-8'
-
-	if output:
-		torrent_file = output
+	if 'hide_progress' in args:
+		defaults.show_progress = False
+		defaults.hide_progress = True
 	else:
-		if os.path.isfile(input_path):
-			torrent_file = os.path.basename(os.path.abspath(input_path))
+		defaults.show_progress = True
+		defaults.hide_progress = False
+
+	if 'show_files' in args:
+		defaults.show_files = True
+		defaults.hide_files = False
+	else:
+		defaults.show_files = False
+		defaults.hide_files = True
+
+	defaults.no_recursion = False
+	defaults.max_depth = math.inf
+
+	if 'private' in args:
+		defaults.private = True
+		defaults.public = False
+	else:
+		defaults.private = False
+		defaults.public = True
+
+	defaults.piece_size = 'auto'
+	defaults.created_by = f"{__title__} {__version__}"
+	defaults.comment = None
+	defaults.source = None
+	defaults.md5 = False
+
+	if 'input' in args:
+		defaults.output = Path(args.input.name + '.torrent').resolve()
+	elif 'torrent' in args:
+		defaults.output = args.torrent.with_name(
+			str(args.torrent.name).replace('.torrent', '') + '-xseed.torrent'
+		)
+
+	config_defaults = get_defaults(args._command)
+	for k, v in config_defaults.items():
+		if k == 'max_depth':
+			defaults.max_depth = int(v)
+		elif k == 'private':
+			defaults['private'] = True
+			defaults['public'] = False
+		elif k == 'public':
+			defaults['public'] = True
+			defaults['public'] = False
+		elif k in [
+			'show_progress',
+			'show_files'
+		]:
+			defaults[k] = v
+			defaults[k.replace('show', 'hide')] = not v
+		elif k in [
+			'hide_progress',
+			'hide_files'
+		]:
+			defaults[k] = v
+			defaults[k.replace('hide', 'show')] = not v
 		else:
-			torrent_file = os.path.dirname(os.path.abspath(input_path))
+			defaults[k] = v
 
-	torrent_file += '.torrent'
-
-	write_torrent_file(torrent_file, torrent_info)
-
-	output_summary(torrent_info, show_files=show_files)
+	return defaults
 
 
-@thorod.command()
-@click.option(
-	'--created-by', metavar='CREATOR', default=f'{__title__} {__version__}',
-	help=f"Set created by field.\nDefaults to {__title__} {__version__}."
-)
-@click.option('-c', '--comment', metavar='COMMENT', help="Set comment field.")
-@click.option('-s', '--source', metavar='SOURCE', help="Set source field.")
-@click.option('-p/-P', '--private/--public', is_flag=True, default=None, help="Set private flag.")
-@click.option(
-	'-o', '--output', metavar='NAME',
-	help="Set name of torrent file.\nDefaults to input file or directory name."
-)
-@click.argument('torrent_file', type=CustomPath(exists=True), callback=is_torrent_file, required=True)
-@click.argument('trackers', nargs=-1, callback=replace_abbreviations, required=True)
-def xseed(created_by, comment, source, private, output, torrent_file, trackers):
-	"""Copy a torrent for cross-seeding.
+def merge_defaults(defaults, parsed):
+	args = Namespace()
 
-	Tracker tiers are separated by a space.
-	Trackers on the same tier should be quoted and separated with a carat (^)
+	args.update(defaults)
+	args.update(parsed)
 
-	Example: 'tracker1^tracker2' tracker3
-	"""
+	if args.get('no_recursion'):
+		args.max_depth = 0
 
-	torrent_info = read_torrent_file(torrent_file)
-
-	if not isinstance(torrent_info, dict) or 'info' not in torrent_info:
-		raise ValueError(f"{torrent_file} is not a valid torrent file.")
-
-	torrent_info['info'].pop('source', None)
-
-	for k in ['announce-list', 'comment']:
-		torrent_info.pop(k, None)
-
-	torrent_info['info']['salt'] = generate_unique_string()
-
-	if not trackers:
-		torrent_info['info']['private'] = 0
-	elif private is not None:
-		torrent_info['info']['private'] = 1 if private else 0
-
-	if source:
-		torrent_info['info']['source'] = source
-
-	if trackers:
-		torrent_info['announce'] = trackers[0][0]
-
-		if len(trackers) > 1 or len(trackers[0]) > 1:
-			torrent_info['announce-list'] = trackers
-	else:
-		torrent_info.pop('announce', None)
-		torrent_info.pop('announce-list', None)
-
-	if created_by:
-		torrent_info['created by'] = created_by
-
-	if comment:
-		torrent_info['comment'] = comment
-
-	torrent_info['creation date'] = pendulum.now('utc').int_timestamp
-
-	torrent_info['encoding'] = 'UTF-8'
-
-	if output:
-		xseed_torrent = output + '.torrent'
-	else:
-		xseed_torrent = os.path.basename(torrent_file).replace('.torrent', '-xseed.torrent')
-
-	write_torrent_file(xseed_torrent, torrent_info)
-
-	output_summary(torrent_info)
+	return args
 
 
-@thorod.group(cls=DefaultGroup, default='list', default_if_no_args=True)
-def abbrs():
-	"""List/Add/Remove tracker abbreviations."""
+def run():
+	try:
+		parsed = parse_args()
 
-	pass
-
-
-@abbrs.command('list')
-def list_abbreviations():
-	"""List tracker abbreviations."""
-
-	conf = get_config()
-
-	output_abbreviations(conf)
-
-
-@abbrs.command('add')
-@click.argument('abbreviation', callback=is_usable_abbr, required=True)
-@click.argument('tracker', required=True)
-def add_abbreviation(abbreviation, tracker):
-	"""Add tracker abbreviation."""
-
-	conf = get_config()
-
-	conf['trackers'][abbreviation] = tracker
-
-	write_config_file(conf)
-
-	output_abbreviations(conf)
-
-
-@abbrs.command('rem')
-@click.argument('abbreviations', nargs=-1)
-def remove_abbreviations(abbreviations):
-	"""Remove tracker abbreviations."""
-
-	conf = get_config()
-
-	for abbreviation in abbreviations:
-		conf['trackers'].pop(abbreviation, None)
-
-	write_config_file(conf)
-
-	output_abbreviations(conf)
+		if parsed._command is None:
+			thorod.parse_args(['-h'])
+		elif parsed._command == 'abbrs':
+			parsed.func(parsed)
+		else:
+			check_args(parsed)
+			defaults = default_args(parsed)
+			args = merge_defaults(defaults, parsed)
+			args.func(args)
+	except KeyboardInterrupt:
+		thorod.exit(130, "Interrupted by user")

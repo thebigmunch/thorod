@@ -1,11 +1,65 @@
 import os
 import random
 import string
-import subprocess
+from collections.abc import MutableMapping
 from hashlib import sha1
+from pathlib import Path
+
+import pprintpp
 
 from . import bencode
-from .constants import PIECE_SIZE_VALUES, SYMBOLS
+from .constants import (
+	PIECE_SIZE_VALUES,
+	SYMBOLS,
+	UNIX_PATH_RE,
+)
+
+
+class DictMixin(MutableMapping):
+	def __getattr__(self, attr):
+		try:
+			return self.__getitem__(attr)
+		except KeyError:
+			raise AttributeError(attr) from None
+
+	def __setattr__(self, attr, value):
+		self.__setitem__(attr, value)
+
+	def __delattr__(self, attr):
+		try:
+			return self.__delitem__(attr)
+		except KeyError:
+			raise AttributeError(attr) from None
+
+	def __getitem__(self, key):
+		return self.__dict__[key]
+
+	def __setitem__(self, key, value):
+		self.__dict__[key] = value
+
+	def __delitem__(self, key):
+		del self.__dict__[key]
+
+	def __missing__(self, key):
+		return KeyError(key)
+
+	def __iter__(self):
+		return iter(self.__dict__)
+
+	def __len__(self):
+		return len(self.__dict__)
+
+	def __repr__(self, repr_dict=None):
+		return f"<{self.__class__.__name__} ({pprintpp.pformat(self.__dict__)})>"
+
+	def items(self):
+		return self.__dict__.items()
+
+	def keys(self):
+		return self.__dict__.keys()
+
+	def values(self):
+		return self.__dict__.values()
 
 
 def calculate_data_size(files):
@@ -25,61 +79,50 @@ def calculate_piece_size(data_size):
 def calculate_torrent_size(torrent_info):
 	"""Calculate the total size of the files in a torrent."""
 
-	files = torrent_info.get('info').get('files') or [torrent_info['info']]
+	files = torrent_info.get('info').get('files') or [
+		torrent_info['info']
+	]
 
 	return sum(f['length'] for f in files)
 
 
-def convert_cygwin_path(path):
-	"""Convert Unix path string from Cygwin to Windows format.
+def convert_unix_path(filepath):
+	"""Convert Unix filepath string from Cygwin et al to Windows format.
 
 	Parameters:
-		path (str): A path string.
+		filepath (str): A filepath string.
 
 	Returns:
-		str: A path string in Windows format.
+		str: A filepath string in Windows format.
 
 	Raises:
 		FileNotFoundError
-		:exc:`subprocess.CalledProcessError`
+		subprocess.CalledProcessError
 	"""
 
-	try:
-		win_path = subprocess.check_output(["cygpath", "-aw", path], universal_newlines=True).strip()
-	except (FileNotFoundError, subprocess.CalledProcessError):
-		raise subprocess.CalledProcessError("Call to cygpath failed.")
+	match = UNIX_PATH_RE.match(filepath)
+	if not match:
+		return Path(filepath.replace('/', r'\\'))
 
-	return win_path
+	parts = match.group(3).split('/')
+	parts[0] = f"{parts[0].upper()}:/"
+
+	return Path(*parts)
 
 
 def generate_unique_string():
 	"""Generate a random string to make a torrent's infohash unique."""
 
-	return ''.join(random.choice(string.ascii_letters + string.digits) for x in range(32))
+	return ''.join(
+		random.choice(string.ascii_letters + string.digits)
+		for x in range(32)
+	)
 
 
-def get_files(path, max_depth=float('inf')):
-	"""Create a list of files from given path."""
-
-	if os.path.isfile(path):
-		yield path
-	elif os.path.isdir(path):
-		for root, _, files in walk_depth(path, max_depth=max_depth):
-			for f in files:
-				yield os.path.join(root, f)
-
-
-def get_file_path(file, basedir):
+def get_file_path(filepath, basedir):
 	"""Get all parts of the file path relative to the base directory of the torrent."""
 
-	head = os.path.relpath(file, basedir)
-	parts = []
-
-	while head:
-		head, tail = os.path.split(head)
-		parts.insert(0, tail)
-
-	return parts
+	return list(filepath.relative_to(basedir).parts)
 
 
 def hash_info_dict(info_dict):

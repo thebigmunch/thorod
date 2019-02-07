@@ -11,6 +11,12 @@ This project adheres to [Semantic Versioning](https://semver.org).
 ### Added
 
 * Trackerless torrent support.
+* Ability to set defaults in config file.
+
+### Changed
+
+* Use argparse instead of click for CLI.
+* Update default trackers.
 
 ### Fixed
 

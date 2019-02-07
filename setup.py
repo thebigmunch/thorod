@@ -29,14 +29,11 @@ setup(
 
 	install_requires=[
 		'appdirs>=1.4',
-		'click>=6.0',
-		'click-default-group>=1.2',
-		'colorama>=0.3.9',
-		'crayons>=0.1.2',
+		'crayons>=0.2',
 		'pendulum>=2.0',
-		'sphinx-click>=1.0',
 		'sortedcontainers>=2.0',
-		'toml>=0.9.4',
+		'sphinx-argparse>=0.2',
+		'tomlkit>=0.5',
 		'tqdm>=4.19',
 	],
 
@@ -47,7 +44,7 @@ setup(
 
 	entry_points={
 		'console_scripts': [
-			'thorod = thorod.cli:thorod'
+			'thorod = thorod.cli:run'
 		]
 	}
 )

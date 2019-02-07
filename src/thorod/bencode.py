@@ -96,7 +96,9 @@ def _bencode(data):
 
 		return b'd' + enc_dict + b'e'
 	else:
-		raise TypeError(f"{type(data)} is not a valid type for bencoding.")
+		raise TypeError(
+			f"{type(data)} is not a valid type for bencoding."
+		)
 
 
 def dump(obj, fp):
