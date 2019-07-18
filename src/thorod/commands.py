@@ -29,7 +29,6 @@ def do_abbrs(args):
 	if args._subcommand == 'add':
 		conf['trackers'][args.abbreviation] = args.tracker
 	elif args._subcommand in ['rem', 'remove']:
-		print(args.abbreviations)
 		for abbreviation in args.abbreviations:
 			try:
 				del conf['trackers'][abbreviation]

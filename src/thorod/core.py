@@ -48,7 +48,7 @@ def create_dir_info_dict(
 			unit_scale=True,
 			leave=True,
 			dynamic_ncols=True,
-			bar_format='{percentage:3.0f}% |{bar}| {n_fmt}/{total_fmt} [{remaining}  {rate_fmt}]',
+			bar_format='{percentage:3.0f}% |{bar}| {n_fmt}/{total_fmt} [{remaining} {rate_fmt}]',
 		)
 
 	for file in files:
@@ -129,7 +129,7 @@ def create_file_info_dict(
 			unit_scale=True,
 			leave=True,
 			dynamic_ncols=True,
-			bar_format='{percentage:3.0f}% |{bar}| {n_fmt}/{total_fmt} [{remaining}  {rate_fmt}]',
+			bar_format='{percentage:3.0f}% |{bar}| {n_fmt}/{total_fmt} [{remaining} {rate_fmt}]',
 		)
 
 	with open(files[0], 'rb') as f:

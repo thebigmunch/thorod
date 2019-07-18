@@ -632,4 +632,4 @@ def run():
 			args = merge_defaults(defaults, parsed)
 			args.func(args)
 	except KeyboardInterrupt:
-		thorod.exit(130, "Interrupted by user")
+		thorod.exit(130, "\nInterrupted by user")

@@ -35,7 +35,6 @@ def convert_default_keys(item):
 
 def get_defaults(command):
 	config_defaults = read_config_file().get('defaults')
-	print(config_defaults)
 	defaults = DictMixin()
 
 	if config_defaults:
