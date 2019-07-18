@@ -254,6 +254,7 @@ output_options = output.add_argument_group("Output")
 output_options.add_argument(
 	'-o', '--output',
 	metavar='NAME',
+	type=lambda p: custom_path(p),
 	help=(
 		"Set name of torrent file.\n"
 		"Defaults to input file or directory name."
