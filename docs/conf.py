@@ -84,7 +84,6 @@ html_theme = 'alabaster'
 # documentation.
 
 html_theme_options = {
-	'fixed_sidebar': True,
 	'github_user': 'thebigmunch',
 	'github_repo': 'thorod',
 	'github_type': 'star',
