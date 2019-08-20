@@ -13,7 +13,7 @@ ON_TRAVIS = 'TRAVIS' in os.environ
 @nox.session(python=py37)
 def lint(session):
 	session.install('.[lint]')
-	session.run('flake8', 'src/', 'tests/')
+	session.run('flake8', 'src/')
 
 
 @nox.session(python=py37)

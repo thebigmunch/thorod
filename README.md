@@ -2,6 +2,7 @@
 
 [![PyPI](https://img.shields.io/pypi/v/thorod.svg?label=PyPI)](https://pypi.org/project/thorod/)
 ![](https://img.shields.io/badge/Python-3.6%2B-blue.svg)  
+[![Travis](https://img.shields.io/travis/thebigmunch/thorod.svg?label=Travis)](https://travis-ci.org/thebigmunch/thorod)  
 [![Docs - Stable](https://img.shields.io/readthedocs/thorod/stable.svg?label=Docs%20%28Stable%29)](https://thorod.readthedocs.io/en/stable/)
 [![Docs - Latest](https://img.shields.io/readthedocs/thorod/latest.svg?label=Docs%20%28Latest%29)](https://thorod.readthedocs.io/en/latest/)
 
