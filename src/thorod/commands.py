@@ -42,7 +42,17 @@ def do_abbrs(args):
 def do_create(args):
 	torrent_info = SortedDict()
 
-	files = list(get_files(args.input, args.max_depth))
+	files = get_files(
+		args.input,
+		max_depth=args.max_depth,
+		exclude_paths=args.exclude_paths,
+		exclude_regexes=args.exclude_regexes,
+		exclude_globs=args.exclude_globs
+	)
+
+	if not files:
+		sys.exit("\nNo files matching criteria found.")
+
 	data_size = calculate_data_size(files)
 	piece_size = calculate_piece_size(data_size)
 

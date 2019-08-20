@@ -186,6 +186,37 @@ local_options.add_argument(
 		"Default is infinite recursion."
 	)
 )
+local_options.add_argument(
+	'-xp', '--exclude-path',
+	metavar='PATH',
+	action='append',
+	dest='exclude_paths',
+	help=(
+		"Exclude filepaths.\n"
+		"Can be specified multiple times."
+	)
+)
+local_options.add_argument(
+	'-xr', '--exclude-regex',
+	metavar='RX',
+	action='append',
+	dest='exclude_regexes',
+	help=(
+		"Exclude filepaths using regular expressions.\n"
+		"Can be specified multiple times."
+	)
+)
+local_options.add_argument(
+	'-xg', '--exclude-glob',
+	metavar='GP',
+	action='append',
+	dest='exclude_globs',
+	help=(
+		"Exclude filepaths using glob patterns.\n"
+		"Can be specified multiple times.\n"
+		"Absolute glob patterns not supported."
+	)
+)
 
 
 ###########
@@ -558,6 +589,9 @@ def default_args(args):
 
 	defaults.no_recursion = False
 	defaults.max_depth = math.inf
+	defaults.exclude_paths = []
+	defaults.exclude_regexes = []
+	defaults.exclude_globs = []
 
 	if 'private' in args:
 		defaults.private = True

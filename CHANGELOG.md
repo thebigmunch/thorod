@@ -12,6 +12,10 @@ This project adheres to [Semantic Versioning](https://semver.org).
 
 * Trackerless torrent support.
 * Ability to set defaults in config file.
+* Options to exclude filepaths by:
+	* strings
+	* regexes
+	* globs
 
 ### Changed
 

@@ -1,6 +1,7 @@
 import functools
 import math
 import os
+import platform
 import random
 from hashlib import md5, sha1
 from pathlib import Path
@@ -185,11 +186,20 @@ def generate_magnet_link(torrent_info):
 	return magnet_link
 
 
-def get_files(filepath, max_depth=float('inf')):
+def get_files(
+	filepath,
+	*,
+	max_depth=float('inf'),
+	exclude_paths=None,
+	exclude_regexes=None,
+	exclude_globs=None
+):
 	"""Create a list of files from given filepath."""
 
+	files = []
+
 	if filepath.is_file():
-		yield filepath
+		files.append(filepath)
 	elif filepath.is_dir():
 		start_level = len(filepath.parts)
 
@@ -198,7 +208,9 @@ def get_files(filepath, max_depth=float('inf')):
 				path.is_file()
 				and len(path.parent.parts) - start_level <= max_depth
 			):
-				yield path
+				files.append(path)
+
+	return files
 
 
 def output_abbreviations(conf):
