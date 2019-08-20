@@ -1,7 +1,13 @@
 import argparse
 import math
 import os
+import re
 from pathlib import Path
+
+import pendulum
+from attr import attrib, attrs
+from pendulum import DateTime
+from pendulum.tz import fixed_timezone
 
 from . import __title__, __version__
 from .commands import (
@@ -24,6 +30,45 @@ from .utils import (
 	DictMixin,
 	convert_unix_path,
 )
+
+
+DATETIME_RE = re.compile(
+	r"(?P<year>\d{4})"
+	r"[-\s]?"
+	r"(?P<month>\d{1,2})?"
+	r"[-\s]?"
+	r"(?P<day>\d{1,2})?"
+	r"[T\s]?"
+	r"(?P<hour>\d{1,2})?"
+	r"[:\s]?"
+	r"(?P<minute>\d{1,2})?"
+	r"[:\s]?"
+	r"(?P<second>\d{1,2})?"
+	r"(?P<tz_oper>[+\-\s])?"
+	r"(?P<tz_hour>\d{1,2})?"
+	r"[:\s]?"
+	r"(?P<tz_minute>\d{1,2})?"
+)
+
+
+def _convert_to_int(value):
+	if value is not None:
+		value = int(value)
+
+	return value
+
+
+@attrs(slots=True, frozen=True, kw_only=True)
+class ParsedDateTime:
+	year = attrib(converter=_convert_to_int)
+	month = attrib(converter=_convert_to_int)
+	day = attrib(converter=_convert_to_int)
+	hour = attrib(converter=_convert_to_int)
+	minute = attrib(converter=_convert_to_int)
+	second = attrib(converter=_convert_to_int)
+	tz_oper = attrib()
+	tz_hour = attrib(converter=_convert_to_int)
+	tz_minute = attrib(converter=_convert_to_int)
 
 
 class Namespace(DictMixin):
@@ -93,6 +138,132 @@ def replace_abbreviations(value):
 	process_trackers([tier.split('^') for tier in value])
 
 	return announce_list
+
+
+def time_period(
+	dt_string,
+	*,
+	in_=False,
+	on=False,
+	before=False,
+	after=False
+):
+	if dt_string == 'today':
+		dt_string = pendulum.today().to_date_string()
+	elif dt_string == 'yesterday':
+		dt_string = pendulum.yesterday().to_date_string()
+
+	match = DATETIME_RE.match(dt_string)
+
+	if not match or match['year'] is None:
+		raise argparse.ArgumentTypeError(
+			f"'{dt_string}' is not a supported datetime string."
+		)
+
+	parsed = ParsedDateTime(**match.groupdict())
+
+	if parsed.tz_hour:
+		tz_offset = 0
+		if parsed.tz_hour is not None:
+			tz_offset += parsed.tz_hour * 3600
+		if parsed.tz_minute is not None:
+			tz_offset += parsed.tz_minute * 60
+		if parsed.tz_oper == '-':
+			tz_offset *= -1
+		parsed_tz = fixed_timezone(tz_offset)
+	else:
+		parsed_tz = pendulum.local_timezone()
+
+	if in_:
+		if parsed.day:
+			raise argparse.ArgumentTypeError(
+				f"Datetime string must contain only year or year/month for 'in' option."
+			)
+		start = pendulum.datetime(
+			parsed.year,
+			parsed.month or 1,
+			parsed.day or 1,
+			tz=parsed_tz
+		)
+
+		if parsed.month:
+			end = start.end_of('month')
+		else:
+			end = start.end_of('year')
+
+		return pendulum.period(start, end)
+	elif on:
+		if (
+			not all(
+				getattr(parsed, attr)
+				for attr in ['year', 'month', 'day']
+			)
+			or parsed.hour
+		):
+			raise argparse.ArgumentTypeError(
+				f"Datetime string must contain only year, month, and day for 'on' option."
+			)
+
+		dt = pendulum.datetime(
+			parsed.year,
+			parsed.month,
+			parsed.day,
+			tz=parsed_tz
+		)
+
+		return pendulum.period(dt.start_of('day'), dt.end_of('day'))
+	elif before:
+		start = DateTime.min
+
+		dt = pendulum.datetime(
+			parsed.year,
+			parsed.month or 1,
+			parsed.day or 1,
+			parsed.hour or 23,
+			parsed.minute or 59,
+			parsed.second or 59,
+			0,
+			tz=parsed_tz
+		)
+
+		if not parsed.month:
+			dt = dt.start_of('year')
+		elif not parsed.day:
+			dt = dt.start_of('month')
+		elif not parsed.hour:
+			dt = dt.start_of('day')
+		elif not parsed.minute:
+			dt = dt.start_of('hour')
+		elif not parsed.second:
+			dt = dt.start_of('minute')
+
+		return pendulum.period(start, dt)
+	elif after:
+		end = DateTime.max
+
+		dt = pendulum.datetime(
+			parsed.year,
+			parsed.month or 1,
+			parsed.day or 1,
+			parsed.hour or 23,
+			parsed.minute or 59,
+			parsed.second or 59,
+			99999,
+			tz=parsed_tz
+		)
+
+		if not parsed.month:
+			dt = dt.end_of('year')
+		elif not parsed.day:
+			dt = dt.end_of('month')
+		elif not parsed.hour:
+			dt = dt.start_of('day')
+		elif not parsed.minute:
+			dt = dt.start_of('hour')
+		elif not parsed.second:
+			dt = dt.start_of('minute')
+
+		return pendulum.period(dt, end)
 
 
 ########
@@ -168,6 +339,7 @@ local = argparse.ArgumentParser(
 	argument_default=argparse.SUPPRESS,
 	add_help=False
 )
+
 local_options = local.add_argument_group("Local")
 local_options.add_argument(
 	'--no-recursion',
@@ -216,6 +388,66 @@ local_options.add_argument(
 		"Can be specified multiple times.\n"
 		"Absolute glob patterns not supported."
 	)
+)
+
+
+##########
+# Filter #
+##########
+
+filter_dates = argparse.ArgumentParser(
+	argument_default=argparse.SUPPRESS,
+	add_help=False
+)
+
+dates_options = filter_dates.add_argument_group("Filter")
+dates_options.add_argument(
+	'--created-in',
+	metavar='DATE',
+	type=lambda d: time_period(d, in_=True),
+	help="Include files created in year or year/month."
+)
+dates_options.add_argument(
+	'--created-on',
+	metavar='DATE',
+	type=lambda d: time_period(d, on=True),
+	help="Include files created on date."
+)
+dates_options.add_argument(
+	'--created-before',
+	metavar='DATE',
+	type=lambda d: time_period(d, before=True),
+	help="Include files created before datetime."
+)
+dates_options.add_argument(
+	'--created-after',
+	metavar='DATE',
+	type=lambda d: time_period(d, after=True),
+	help="Include files created after datetime."
+)
+dates_options.add_argument(
+	'--modified-in',
+	metavar='DATE',
+	type=lambda d: time_period(d, in_=True),
+	help="Include files created in year or year/month."
+)
+dates_options.add_argument(
+	'--modified-on',
+	metavar='DATE',
+	type=lambda d: time_period(d, on=True),
+	help="Include files created on date."
+)
+dates_options.add_argument(
+	'--modified-before',
+	metavar='DATE',
+	type=lambda d: time_period(d, before=True),
+	help="Include files modified before datetime."
+)
+dates_options.add_argument(
+	'--modified-after',
+	metavar='DATE',
+	type=lambda d: time_period(d, after=True),
+	help="Include files modified after datetime."
 )
 
 
@@ -458,6 +690,7 @@ create_command = subcommands.add_parser(
 		show_progress,
 		show_files,
 		local,
+		filter_dates,
 		torrent,
 		output,
 		input_,
@@ -635,6 +868,15 @@ def default_args(args):
 		]:
 			defaults[k] = v
 			defaults[k.replace('hide', 'show')] = not v
+		elif k.startswith(('created', 'modified')):
+			if k.endswith('in'):
+				defaults[k] = time_period(v, in_=True)
+			elif k.endswith('on'):
+				defaults[k] = time_period(v, on=True)
+			elif k.endswith('before'):
+				defaults[k] = time_period(v, before=True)
+			elif k.endswith('after'):
+				defaults[k] = time_period(v, after=True)
 		else:
 			defaults[k] = v
 

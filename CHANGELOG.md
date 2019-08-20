@@ -16,6 +16,9 @@ This project adheres to [Semantic Versioning](https://semver.org).
 	* strings
 	* regexes
 	* globs
+* Options to filter files by:
+	* creation date/time
+	* modification date/time
 
 ### Changed
 

@@ -170,6 +170,65 @@ def create_file_info_dict(
 	return info_dict
 
 
+def filter_dates(
+	filepaths,
+	*,
+	created_in=None,
+	created_on=None,
+	created_before=None,
+	created_after=None,
+	modified_in=None,
+	modified_on=None,
+	modified_before=None,
+	modified_after=None
+):
+	matched_filepaths = filepaths
+
+	def _match_created_date(filepaths, period):
+		for filepath in filepaths:
+			file_stat = filepath.stat()
+
+			if platform.system() == 'Windows':
+				created_timestamp = file_stat.st_ctime
+			else:
+				try:
+					created_timestamp = file_stat.st_birthtime
+				except AttributeError:
+					# Settle for modified time on *nix systems
+					# not supporting birth time.
+					created_timestamp = file_stat.st_mtime
+
+			if pendulum.from_timestamp(created_timestamp) in period:
+				yield filepath
+
+	def _match_modified_date(filepaths, period):
+		for filepath in filepaths:
+			modified_timestamp = filepath.stat().st_mtime
+
+			if pendulum.from_timestamp(modified_timestamp) in period:
+				yield filepath
+
+	for period in [
+		created_in,
+		created_on,
+		created_before,
+		created_after,
+	]:
+		if period is not None:
+			matched_filepaths = _match_created_date(matched_filepaths, period)
+
+	for period in [
+		modified_in,
+		modified_on,
+		modified_before,
+		modified_after,
+	]:
+		if period is not None:
+			matched_filepaths = _match_modified_date(matched_filepaths, period)
+
+	return list(matched_filepaths)
+
+
 def generate_magnet_link(torrent_info):
 	torrent_name = torrent_info['info']['name']
 	info_hash = hash_info_dict(torrent_info['info'])

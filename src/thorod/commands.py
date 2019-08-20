@@ -1,3 +1,5 @@
+import sys
+
 import crayons
 import pendulum
 from sortedcontainers import SortedDict
@@ -9,6 +11,7 @@ from .config import (
 from .core import (
 	create_dir_info_dict,
 	create_file_info_dict,
+	filter_dates,
 	generate_magnet_link,
 	get_files,
 	output_abbreviations,
@@ -49,6 +52,31 @@ def do_create(args):
 		exclude_regexes=args.exclude_regexes,
 		exclude_globs=args.exclude_globs
 	)
+
+	if any(
+		args.get(option)
+		for option in [
+			'created_in',
+			'created_on',
+			'created_before',
+			'created_after',
+			'modified_in',
+			'modified_on',
+			'modified_before',
+			'modified_after',
+		]
+	):
+		files = filter_dates(
+			files,
+			created_in=args.get('created_in'),
+			created_on=args.get('created_on'),
+			created_before=args.get('created_before'),
+			created_after=args.get('created_after'),
+			modified_in=args.get('modified_in'),
+			modified_on=args.get('modified_on'),
+			modified_before=args.get('modified_before'),
+			modified_after=args.get('modified_after')
+		)
 
 	if not files:
 		sys.exit("\nNo files matching criteria found.")
