@@ -21,6 +21,8 @@ This project adheres to [Semantic Versioning](https://semver.org).
 
 * Use argparse instead of click for CLI.
 * Update default trackers.
+* ``torrent`` command to ``create``.
+* thorod no longer defaults to ``create``.
 
 ### Fixed
 
