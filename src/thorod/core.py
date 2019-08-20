@@ -52,13 +52,13 @@ def create_dir_info_dict(
 			bar_format='{percentage:3.0f}% |{bar}| {n_fmt}/{total_fmt} [{remaining} {rate_fmt}]',
 		)
 
-	for file in files:
+	for file_ in files:
 		file_dict = SortedDict()
 		length = 0
 
 		md5sum = md5() if include_md5 else None
 
-		with open(file, 'rb') as f:
+		with open(file_, 'rb') as f:
 			while True:
 				piece = f.read(piece_size)
 
@@ -80,7 +80,7 @@ def create_dir_info_dict(
 					progress_bar.update(len(piece))
 
 		file_dict['length'] = length
-		file_dict['path'] = get_file_path(file, base_path)
+		file_dict['path'] = get_file_path(file_, base_path)
 
 		if include_md5:
 			file_dict['md5sum'] = md5sum.hexdigest()
@@ -387,7 +387,12 @@ def output_summary(torrent_info, show_files=False):
 				)
 			)
 
-		pad = len(max([size for size, _ in file_infos], key=len))
+		pad = len(
+			max(
+				(size for size, _ in file_infos),
+				key=len
+			)
+		)
 
 		summary += f"\n\n{crayons.yellow('Files')}:\n\n"
 		for size, path in file_infos:
