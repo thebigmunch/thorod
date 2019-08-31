@@ -16,6 +16,9 @@ from .constants import (
 
 
 class DictMixin(MutableMapping):
+	def __init__(self, *args, **kwargs):
+		self.update(*args, **kwargs)
+
 	def __getattr__(self, attr):
 		try:
 			return self.__getitem__(attr)
@@ -32,7 +35,13 @@ class DictMixin(MutableMapping):
 			raise AttributeError(attr) from None
 
 	def __getitem__(self, key):
-		return self.__dict__[key]
+		if key in self.__dict__:
+			return self.__dict__[key]
+
+		if hasattr(self.__class__, '__missing__'):
+			return self.__class__.__missing__(self, key)
+
+		raise KeyError(key)
 
 	def __setitem__(self, key, value):
 		self.__dict__[key] = value

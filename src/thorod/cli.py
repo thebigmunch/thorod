@@ -104,10 +104,6 @@ def custom_path(value):
 	return value
 
 
-def default_to_cwd():
-	return Path.cwd()
-
-
 def is_usable_abbr(value):
 	if value in DEFAULT_ABBRS:
 		raise argparse.ArgumentTypeError(
@@ -889,9 +885,6 @@ def merge_defaults(defaults, parsed):
 	args.update(defaults)
 	args.update(parsed)
 
-	if args.get('no_recursion'):
-		args.max_depth = 0
-
 	return args
 
 
@@ -907,6 +900,10 @@ def run():
 			check_args(parsed)
 			defaults = default_args(parsed)
 			args = merge_defaults(defaults, parsed)
+
+			if args.get('no_recursion'):
+				args.max_depth = 0
+
 			args.func(args)
 	except KeyboardInterrupt:
 		thorod.exit(130, "\nInterrupted by user")
