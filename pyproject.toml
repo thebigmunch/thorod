@@ -20,7 +20,7 @@ homepage = "https://github.com/thebigmunch/thorod"
 python = "^3.6"
 
 appdirs = "^1.4"
-attrs = ">=18.2,<19.2"
+attrs = ">=18.2,<19.3"
 crayons = "^0.2"
 pendulum = "^2.0"
 pprintpp = "0.*"
