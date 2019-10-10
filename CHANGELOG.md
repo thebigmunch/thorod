@@ -19,6 +19,9 @@ This project adheres to [Semantic Versioning](https://semver.org).
 * Options to filter files by:
 	* creation date/time
 	* modification date/time
+* ``--piece-threshold`` option.
+	This sets the piece count threshold for
+	automatic piece size calculation.
 
 ### Changed
 

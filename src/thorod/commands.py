@@ -83,7 +83,7 @@ def do_create(args):
 		sys.exit("\nNo files matching criteria found.")
 
 	data_size = calculate_data_size(filepaths)
-	piece_size = calculate_piece_size(data_size)
+	piece_size = calculate_piece_size(data_size, threshold=args.piece_threshold)
 
 	if not args.trackers:
 		private = False

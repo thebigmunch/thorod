@@ -13,9 +13,9 @@ def calculate_data_size(files):
 	return sum(os.path.getsize(f) for f in files)
 
 
-def calculate_piece_size(data_size):
+def calculate_piece_size(data_size, *, threshold=2000):
 	for piece_size in PIECE_SIZE_VALUES:
-		if data_size / piece_size < 2000:
+		if data_size / piece_size < threshold:
 			break
 
 	return piece_size

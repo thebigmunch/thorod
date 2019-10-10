@@ -158,6 +158,15 @@ torrent_options.add_argument(
 	)
 )
 torrent_options.add_argument(
+	'--piece-threshold',
+	metavar='TRESHOLD',
+	type=int,
+	help=(
+		"Set piece count threshold for automatic piece size calculation.\n"
+		"Defaults to 2000."
+	)
+)
+torrent_options.add_argument(
 	'--created-by',
 	metavar='CREATOR',
 	help=(
@@ -518,6 +527,7 @@ def default_args(args):
 		defaults.public = True
 
 	defaults.piece_size = 'auto'
+	defaults.piece_threshold = 2000
 	defaults.created_by = f"{__title__} {__version__}"
 	defaults.comment = None
 	defaults.source = None
