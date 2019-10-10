@@ -1,10 +1,6 @@
 import random
-import re
 
 from sortedcontainers import SortedDict
-
-UNIX_PATH_RE = re.compile(r'(/(cygdrive/)?)(.*)')
-"""Regex pattern matching UNIX-style filepaths."""
 
 
 DEFAULT_ABBRS = SortedDict(

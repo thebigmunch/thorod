@@ -3,6 +3,7 @@ import sys
 import crayons
 import pendulum
 from sortedcontainers import SortedDict
+from tbm_utils import filter_filepaths_by_dates, get_filepaths
 
 from .config import (
 	read_config_file,
@@ -11,9 +12,7 @@ from .config import (
 from .core import (
 	create_dir_info_dict,
 	create_file_info_dict,
-	filter_dates,
 	generate_magnet_link,
-	get_files,
 	output_abbreviations,
 	output_summary,
 	read_torrent_file,
@@ -45,7 +44,7 @@ def do_abbrs(args):
 def do_create(args):
 	torrent_info = SortedDict()
 
-	files = get_files(
+	filepaths = get_filepaths(
 		args.input,
 		max_depth=args.max_depth,
 		exclude_paths=args.exclude_paths,
@@ -66,8 +65,8 @@ def do_create(args):
 			'modified_after',
 		]
 	):
-		files = filter_dates(
-			files,
+		filepaths = filter_filepaths_by_dates(
+			filepaths,
 			created_in=args.get('created_in'),
 			created_on=args.get('created_on'),
 			created_before=args.get('created_before'),
@@ -78,10 +77,12 @@ def do_create(args):
 			modified_after=args.get('modified_after')
 		)
 
-	if not files:
+	filepaths = list(filepaths)
+
+	if not filepaths:
 		sys.exit("\nNo files matching criteria found.")
 
-	data_size = calculate_data_size(files)
+	data_size = calculate_data_size(filepaths)
 	piece_size = calculate_piece_size(data_size)
 
 	if not args.trackers:
@@ -91,7 +92,7 @@ def do_create(args):
 
 	if args.input.is_dir():
 		info_dict = create_dir_info_dict(
-			files,
+			filepaths,
 			data_size,
 			piece_size,
 			private,
@@ -101,7 +102,7 @@ def do_create(args):
 		)
 	elif args.input.is_file():
 		info_dict = create_file_info_dict(
-			files,
+			filepaths,
 			data_size,
 			piece_size,
 			private,

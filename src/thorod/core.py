@@ -1,7 +1,6 @@
 import functools
 import math
 import os
-import platform
 import random
 from hashlib import md5, sha1
 from pathlib import Path
@@ -9,6 +8,7 @@ from pathlib import Path
 import crayons
 import pendulum
 from sortedcontainers import SortedDict
+from tbm_utils import humanize_filesize
 from tqdm import tqdm
 
 from . import bencode
@@ -19,14 +19,13 @@ from .utils import (
 	generate_unique_string,
 	get_file_path,
 	hash_info_dict,
-	humanize_size,
 )
 
-tqdm.format_sizeof = functools.partial(humanize_size, precision=2)
+tqdm.format_sizeof = functools.partial(humanize_filesize, precision=2)
 
 
 def create_dir_info_dict(
-	files,
+	filepaths,
 	data_size,
 	piece_size,
 	private,
@@ -34,7 +33,7 @@ def create_dir_info_dict(
 	include_md5,
 	show_progress=True,
 ):
-	base_path = Path(os.path.commonpath(files))
+	base_path = Path(os.path.commonpath(filepaths))
 
 	info_dict = SortedDict()
 	file_infos = []
@@ -52,13 +51,13 @@ def create_dir_info_dict(
 			bar_format='{percentage:3.0f}% |{bar}| {n_fmt}/{total_fmt} [{remaining} {rate_fmt}]',
 		)
 
-	for file_ in files:
+	for filepath in filepaths:
 		file_dict = SortedDict()
 		length = 0
 
 		md5sum = md5() if include_md5 else None
 
-		with open(file_, 'rb') as f:
+		with open(filepath, 'rb') as f:
 			while True:
 				piece = f.read(piece_size)
 
@@ -80,7 +79,7 @@ def create_dir_info_dict(
 					progress_bar.update(len(piece))
 
 		file_dict['length'] = length
-		file_dict['path'] = get_file_path(file_, base_path)
+		file_dict['path'] = get_file_path(filepath, base_path)
 
 		if include_md5:
 			file_dict['md5sum'] = md5sum.hexdigest()
@@ -108,7 +107,7 @@ def create_dir_info_dict(
 
 
 def create_file_info_dict(
-	files,
+	filepaths,
 	data_size,
 	piece_size,
 	private,
@@ -133,7 +132,7 @@ def create_file_info_dict(
 			bar_format='{percentage:3.0f}% |{bar}| {n_fmt}/{total_fmt} [{remaining} {rate_fmt}]',
 		)
 
-	with open(files[0], 'rb') as f:
+	with open(filepaths[0], 'rb') as f:
 		while True:
 			piece = f.read(piece_size)
 
@@ -153,7 +152,7 @@ def create_file_info_dict(
 	if show_progress:
 		progress_bar.close()
 
-	info_dict['name'] = files[0].name
+	info_dict['name'] = filepaths[0].name
 	info_dict['length'] = length
 	info_dict['pieces'] = pieces
 	info_dict['piece length'] = piece_size
@@ -170,65 +169,6 @@ def create_file_info_dict(
 	return info_dict
 
 
-def filter_dates(
-	filepaths,
-	*,
-	created_in=None,
-	created_on=None,
-	created_before=None,
-	created_after=None,
-	modified_in=None,
-	modified_on=None,
-	modified_before=None,
-	modified_after=None
-):
-	matched_filepaths = filepaths
-
-	def _match_created_date(filepaths, period):
-		for filepath in filepaths:
-			file_stat = filepath.stat()
-
-			if platform.system() == 'Windows':
-				created_timestamp = file_stat.st_ctime
-			else:
-				try:
-					created_timestamp = file_stat.st_birthtime
-				except AttributeError:
-					# Settle for modified time on *nix systems
-					# not supporting birth time.
-					created_timestamp = file_stat.st_mtime
-
-			if pendulum.from_timestamp(created_timestamp) in period:
-				yield filepath
-
-	def _match_modified_date(filepaths, period):
-		for filepath in filepaths:
-			modified_timestamp = filepath.stat().st_mtime
-
-			if pendulum.from_timestamp(modified_timestamp) in period:
-				yield filepath
-
-	for period in [
-		created_in,
-		created_on,
-		created_before,
-		created_after,
-	]:
-		if period is not None:
-			matched_filepaths = _match_created_date(matched_filepaths, period)
-
-	for period in [
-		modified_in,
-		modified_on,
-		modified_before,
-		modified_after,
-	]:
-		if period is not None:
-			matched_filepaths = _match_modified_date(matched_filepaths, period)
-
-	return list(matched_filepaths)
-
-
 def generate_magnet_link(torrent_info):
 	torrent_name = torrent_info['info']['name']
 	info_hash = hash_info_dict(torrent_info['info'])
@@ -243,33 +183,6 @@ def generate_magnet_link(torrent_info):
 		magnet_link += f'&tr={torrent_info["announce"]}'
 
 	return magnet_link
-
-
-def get_files(
-	filepath,
-	*,
-	max_depth=float('inf'),
-	exclude_paths=None,
-	exclude_regexes=None,
-	exclude_globs=None
-):
-	"""Create a list of files from given filepath."""
-
-	files = []
-
-	if filepath.is_file():
-		files.append(filepath)
-	elif filepath.is_dir():
-		start_level = len(filepath.parts)
-
-		for path in filepath.glob('**/*'):
-			if (
-				path.is_file()
-				and len(path.parent.parts) - start_level <= max_depth
-			):
-				files.append(path)
-
-	return files
 
 
 def output_abbreviations(conf):
@@ -355,8 +268,8 @@ def output_summary(torrent_info, show_files=False):
 		f"\n"
 		f"{crayons.yellow('Info Hash')}:      {crayons.cyan(info_hash)}\n"
 		f"{crayons.yellow('Torrent Name')}:   {crayons.cyan(torrent_name)}\n"
-		f"{crayons.yellow('Data Size')}:      {crayons.cyan(humanize_size(data_size, precision=2))}\n"
-		f"{crayons.yellow('Piece Size')}:     {crayons.cyan(humanize_size(piece_size))}\n"
+		f"{crayons.yellow('Data Size')}:      {crayons.cyan(humanize_filesize(data_size, precision=2))}\n"
+		f"{crayons.yellow('Piece Size')}:     {crayons.cyan(humanize_filesize(piece_size))}\n"
 		f"{crayons.yellow('Piece Count')}:    {crayons.cyan(piece_count)}\n"
 		f"{crayons.yellow('Private')}:        {crayons.cyan(private)}\n"
 		f"{crayons.yellow('Creation Date')}:  {crayons.cyan(creation_date)}\n"
@@ -373,14 +286,14 @@ def output_summary(torrent_info, show_files=False):
 			for f in torrent_info['info']['files']:
 				file_infos.append(
 					(
-						humanize_size(f['length'], precision=2),
+						humanize_filesize(f['length'], precision=2),
 						Path(*f['path']),
 					)
 				)
 		else:
 			file_infos.append(
 				(
-					humanize_size(
+					humanize_filesize(
 						torrent_info['info']['length'], precision=2
 					),
 					Path(torrent_info['info']['name']),
