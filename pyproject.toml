@@ -5,7 +5,7 @@ build-backend = "poetry.masonry.api"
 [tool.poetry]
 name = "thorod"
 description = "A CLI utility for torrent creation and manipulation."
-version = "1.1.0"
+version = "2.0.0"
 
 license = "MIT"
 

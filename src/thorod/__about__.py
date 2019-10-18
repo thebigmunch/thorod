@@ -14,7 +14,7 @@ __title__ = 'thorod'
 __summary__ = 'A CLI utility for torrent creation and manipulation.'
 __url__ = 'https://github.com/thebigmunch/thorod'
 
-__version__ = '1.1.0'
+__version__ = '2.0.0'
 __version_info__ = tuple(int(i) for i in __version__.split('.') if i.isdigit())
 
 __author__ = 'thebigmunch'
