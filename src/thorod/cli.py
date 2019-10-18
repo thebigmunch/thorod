@@ -2,6 +2,7 @@ import argparse
 import math
 from pathlib import Path
 
+import colorama
 from tbm_utils import (
 	Namespace,
 	SubcommandHelpFormatter,
@@ -37,6 +38,8 @@ COMMAND_KEYS = {
 	'magnet',
 	'xseed',
 }
+
+colorama.init()
 
 
 #########

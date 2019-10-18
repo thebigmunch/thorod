@@ -1,7 +1,7 @@
 import sys
 
-import crayons
 import pendulum
+from colorama import Fore
 from sortedcontainers import SortedDict
 from tbm_utils import filter_filepaths_by_dates, get_filepaths
 
@@ -144,7 +144,7 @@ def do_magnet(args):
 	torrent_info = read_torrent_file(args.torrent)
 	magnet_link = generate_magnet_link(torrent_info)
 
-	output = f"\n{crayons.yellow('Magnet')}:         {crayons.cyan(magnet_link)}"
+	output = f"\n{Fore.Yellow}'Magnet':         {Fore.CYAN}{magnet_link}"
 
 	print(output)
 

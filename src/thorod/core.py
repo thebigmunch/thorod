@@ -5,8 +5,8 @@ import random
 from hashlib import md5, sha1
 from pathlib import Path
 
-import crayons
 import pendulum
+from colorama import Fore
 from sortedcontainers import SortedDict
 from tbm_utils import humanize_filesize
 from tqdm import tqdm
@@ -190,12 +190,12 @@ def output_abbreviations(conf):
 		lines = []
 		for abbr, tracker in abbrs.items():
 			if isinstance(tracker, list):
-				line = f'{crayons.cyan(abbr)}: ' + '\n'.ljust(23).join(
-					crayons.magenta(track)
+				line = f'{Fore.CYAN}{abbr}: ' + '\n'.ljust(23).join(
+					f'{Fore.MAGENTA}{track}'
 					for track in tracker
 				)
 			else:
-				line = f'{crayons.cyan(abbr)}: {crayons.magenta(tracker)}'
+				line = f'{Fore.CYAN}{abbr}: {Fore.MAGENTA}{tracker}'
 
 			lines.append(line)
 
@@ -218,10 +218,10 @@ def output_abbreviations(conf):
 
 	summary = (
 		f"\n"
-		f"{crayons.yellow('Config File')}:    {crayons.cyan(CONFIG_PATH)}\n\n"
-		f"{crayons.yellow('Auto')}:           {auto_abbrs}\n\n"
-		f"{crayons.yellow('Default')}:        {default_abbrs}\n\n"
-		f"{crayons.yellow('User')}:           {user_abbrs}"
+		f"{Fore.YELLOW}{'Config File'}:    {Fore.CYAN}{CONFIG_PATH}\n\n"
+		f"{Fore.YELLOW}{'Auto'}:           {auto_abbrs}\n\n"
+		f"{Fore.YELLOW}{'Default'}:        {default_abbrs}\n\n"
+		f"{Fore.YELLOW}{'User'}:           {user_abbrs}"
 	)
 
 	print(summary)
@@ -266,18 +266,18 @@ def output_summary(torrent_info, show_files=False):
 
 	summary = (
 		f"\n"
-		f"{crayons.yellow('Info Hash')}:      {crayons.cyan(info_hash)}\n"
-		f"{crayons.yellow('Torrent Name')}:   {crayons.cyan(torrent_name)}\n"
-		f"{crayons.yellow('Data Size')}:      {crayons.cyan(humanize_filesize(data_size, precision=2))}\n"
-		f"{crayons.yellow('Piece Size')}:     {crayons.cyan(humanize_filesize(piece_size))}\n"
-		f"{crayons.yellow('Piece Count')}:    {crayons.cyan(piece_count)}\n"
-		f"{crayons.yellow('Private')}:        {crayons.cyan(private)}\n"
-		f"{crayons.yellow('Creation Date')}:  {crayons.cyan(creation_date)}\n"
-		f"{crayons.yellow('Created By')}:     {crayons.cyan(created_by)}\n"
-		f"{crayons.yellow('Comment')}:        {crayons.cyan(comment)}\n"
-		f"{crayons.yellow('Source')}:         {crayons.cyan(source)}\n"
-		f"{crayons.yellow('Trackers')}:       {crayons.cyan(tracker_list)}\n\n"
-		f"{crayons.yellow('Magnet')}:         {crayons.cyan(magnet_link)}"
+		f"{Fore.YELLOW}{'Info Hash'}:      {Fore.CYAN}{info_hash}\n"
+		f"{Fore.YELLOW}{'Torrent Name'}:   {Fore.CYAN}{torrent_name}\n"
+		f"{Fore.YELLOW}{'Data Size'}:      {Fore.CYAN}{humanize_filesize(data_size, precision=2)}\n"
+		f"{Fore.YELLOW}{'Piece Size'}:     {Fore.CYAN}{humanize_filesize(piece_size)}\n"
+		f"{Fore.YELLOW}{'Piece Count'}:    {Fore.CYAN}{piece_count}\n"
+		f"{Fore.YELLOW}{'Private'}:        {Fore.CYAN}{private}\n"
+		f"{Fore.YELLOW}{'Creation Date'}:  {Fore.CYAN}{creation_date}\n"
+		f"{Fore.YELLOW}{'Created By'}:     {Fore.CYAN}{created_by}\n"
+		f"{Fore.YELLOW}{'Comment'}:        {Fore.CYAN}{comment}\n"
+		f"{Fore.YELLOW}{'Source'}:         {Fore.CYAN}{source}\n"
+		f"{Fore.YELLOW}{'Trackers'}:       {Fore.CYAN}{tracker_list}\n\n"
+		f"{Fore.YELLOW}{'Magnet'}:         {Fore.CYAN}{magnet_link}"
 	)
 
 	if show_files:
@@ -307,9 +307,9 @@ def output_summary(torrent_info, show_files=False):
 			)
 		)
 
-		summary += f"\n\n{crayons.yellow('Files')}:\n\n"
+		summary += f"\n\n{Fore.YELLOW}{'Files'}:\n\n"
 		for size, path in file_infos:
-			summary += f"    {crayons.white(f'{size:<{pad}}')}  {crayons.green(path)}\n"
+			summary += f"    {Fore.WHITE}{f'{size:<{pad}}'}  {Fore.GREEN}{path}\n"
 
 	print(summary)
 

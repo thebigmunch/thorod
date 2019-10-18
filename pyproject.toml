@@ -21,7 +21,7 @@ python = "^3.6"
 
 appdirs = "^1.4"
 attrs = ">=18.2,<19.4"
-crayons = "^0.2"
+colorama = "0.*"
 pendulum = "^2.0"
 pprintpp = "0.*"
 sortedcontainers = "^2.0"
