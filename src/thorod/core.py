@@ -3,7 +3,7 @@ import math
 import os
 import random
 from hashlib import md5, sha1
-from pathlib import Path
+from pathlib import Path, PurePath
 
 import pendulum
 from colorama import Fore
@@ -287,7 +287,7 @@ def output_summary(torrent_info, show_files=False):
 				file_infos.append(
 					(
 						humanize_filesize(f['length'], precision=2),
-						Path(*f['path']),
+						PurePath(*f['path']),
 					)
 				)
 		else:
@@ -296,20 +296,31 @@ def output_summary(torrent_info, show_files=False):
 					humanize_filesize(
 						torrent_info['info']['length'], precision=2
 					),
-					Path(torrent_info['info']['name']),
+					PurePath(torrent_info['info']['name']),
 				)
 			)
 
-		pad = len(
+		num_pad = len(
 			max(
-				(size for size, _ in file_infos),
+				(size.split()[0] for size, _ in file_infos),
+				key=len
+			)
+		)
+		unit_pad = len(
+			max(
+				(size.split()[1] for size, _ in file_infos),
 				key=len
 			)
 		)
 
 		summary += f"\n\n{Fore.YELLOW}{'Files'}:\n\n"
 		for size, path in file_infos:
-			summary += f"    {Fore.WHITE}{f'{size:<{pad}}'}  {Fore.GREEN}{path}\n"
+			num, unit = size.split()
+			summary += " " * 4
+			summary += f"{Fore.WHITE}{num:>{num_pad}} "
+			summary += f"{Fore.WHITE}{unit:<{unit_pad}}"
+			summary += " " * 2
+			summary += f"{Fore.GREEN}{path}\n"
 
 	print(summary)
 
