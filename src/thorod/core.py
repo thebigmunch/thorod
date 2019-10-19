@@ -12,7 +12,7 @@ from tbm_utils import humanize_filesize
 from tqdm import tqdm
 
 from . import bencode
-from .config import CONFIG_PATH
+from .config import ABBRS, CONFIG_PATH
 from .constants import DEFAULT_ABBRS
 from .utils import (
 	calculate_torrent_size,
@@ -186,35 +186,51 @@ def generate_magnet_link(torrent_info):
 
 
 def output_abbreviations(conf):
-	def abbr_list(abbrs):
+	def abbr_list(abbrs, max_len):
 		lines = []
 		for abbr, tracker in abbrs.items():
+			pad = max_len - len(abbr)
 			if isinstance(tracker, list):
-				line = f'{Fore.CYAN}{abbr}: ' + '\n'.ljust(23).join(
-					f'{Fore.MAGENTA}{track}'
-					for track in tracker
+				line_ = []
+				line_.append(f"{Fore.CYAN}{abbr}:")
+				line_.append(f"{' ' * (pad + 1)}")
+				line_.append(
+					"\n".ljust(24 + pad).join(
+						f"{Fore.MAGENTA}{track}"
+						for track in tracker
+					)
 				)
+				line = "".join(line_)
 			else:
-				line = f'{Fore.CYAN}{abbr}: {Fore.MAGENTA}{tracker}'
+				line = f"{Fore.CYAN}{abbr}: {' ' * pad}{Fore.MAGENTA}{tracker}"
 
 			lines.append(line)
 
 		return '\n'.ljust(17).join(lines)
 
+	max_len = len(
+		max(
+			(abbr for abbr in ABBRS),
+			key=len
+		)
+	)
+
 	auto_abbrs = abbr_list(
 		{
 			'open': "All default trackers in a random tiered order.",
 			'random': "A single random default tracker.",
-		}
+		},
+		max_len
 	)
 	default_abbrs = abbr_list(
 		{
 			abbr: tracker
 			for abbr, tracker in DEFAULT_ABBRS.items()
 			if abbr not in ['open', 'random']
-		}
+		},
+		max_len
 	)
-	user_abbrs = abbr_list(conf['trackers'])
+	user_abbrs = abbr_list(conf['trackers'], max_len)
 
 	summary = (
 		f"\n"

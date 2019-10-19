@@ -11,6 +11,7 @@ This project adheres to [Semantic Versioning](https://semver.org).
 ### Changed
 
 * Neaten the files output with ``--show-files``.
+* Neaten the abbrs output.
 
 
 ## [2.0.0](https://github.com/thebigmunch/thorod/releases/tag/2.0.0) (2019-10-18)
