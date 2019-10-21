@@ -19,6 +19,7 @@ DEFAULT_ABBRS = SortedDict(
 		'rargb': 'udp://9.rarbg.to:2710/announce',
 		'stealth': 'udp://open.stealth.si:80/announce',
 		'thetracker': 'udp://thetracker.org:80/announce',
+		'torrentclub': 'udp://torrentclub.tech:6969/announce',
 		'zer0day': 'udp://tracker.zer0day.to:1337/announce',
 	}
 )
