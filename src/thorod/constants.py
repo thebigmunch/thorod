@@ -13,6 +13,7 @@ DEFAULT_ABBRS = SortedDict(
 		'internetwarriors': 'udp://tracker.internetwarriors.net:1337/announce',
 		'itzmx': 'udp://tracker1.itzmx.com:8080/announce',
 		'leechers-paradise': 'udp://tracker.leechers-paradise.org:6969/announce',
+		'openbittorrent': 'udp://tracker.openbittorrent.com:80/announce',
 		'opentrackr': 'udp://tracker.opentrackr.org:1337/announce',
 		'port443': 'udp://tracker.port443.xyz:6969/announce',
 		'rargb': 'udp://9.rarbg.to:2710/announce',

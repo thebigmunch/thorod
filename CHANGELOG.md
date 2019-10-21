@@ -8,6 +8,10 @@ This project adheres to [Semantic Versioning](https://semver.org).
 
 [Commits](https://github.com/thebigmunch/thorod/compare/2.0.0...master)
 
+### Added
+
+* Abbreviation for OpenBitTorrent tracker.
+
 ### Changed
 
 * Neaten the files output with ``--show-files``.
