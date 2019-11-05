@@ -31,9 +31,9 @@ tqdm = "^4.19"
 
 flake8 = { version = "^3.5", optional = true }
 flake8-builtins = { version = "^1.0", optional = true }
-flake8-comprehensions = { version = "^2.0", optional = true }
+flake8-comprehensions = { version = ">=2.0,<=4.0", optional = true }
 flake8-import-order = { version = "^0.18", optional = true }
-flake8-import-order-tbm = { version = "^1.0.0", optional = true }
+flake8-import-order-tbm = { version = "^1.0", optional = true }
 nox = { version = "^2019", optional = true }
 sphinx = { version= "^2.0", optional = true}
 sphinx-argparse = { version = "^0.2", optional = true }
