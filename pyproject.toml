@@ -25,7 +25,7 @@ colorama = "0.*"
 pendulum = "^2.0"
 pprintpp = "0.*"
 sortedcontainers = "^2.0"
-tbm-utils = "^1.0"
+tbm-utils = "^1.1.1"
 tomlkit = "^0.5"
 tqdm = "^4.19"
 
