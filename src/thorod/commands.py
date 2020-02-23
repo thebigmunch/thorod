@@ -3,7 +3,10 @@ import sys
 import pendulum
 from colorama import Fore
 from sortedcontainers import SortedDict
-from tbm_utils import filter_filepaths_by_dates, get_filepaths
+from tbm_utils import (
+	filter_filepaths_by_dates,
+	get_filepaths,
+)
 
 from .config import (
 	read_config_file,
@@ -52,30 +55,33 @@ def do_create(args):
 		exclude_globs=args.exclude_globs
 	)
 
-	if any(
-		args.get(option)
+	creation_dates = [
+		args[option]
 		for option in [
 			'created_in',
 			'created_on',
 			'created_before',
 			'created_after',
+		]
+		if option in args
+	]
+
+	modification_dates = [
+		args[option]
+		for option in [
 			'modified_in',
 			'modified_on',
 			'modified_before',
 			'modified_after',
 		]
-	):
-		filepaths = filter_filepaths_by_dates(
-			filepaths,
-			created_in=args.get('created_in'),
-			created_on=args.get('created_on'),
-			created_before=args.get('created_before'),
-			created_after=args.get('created_after'),
-			modified_in=args.get('modified_in'),
-			modified_on=args.get('modified_on'),
-			modified_before=args.get('modified_before'),
-			modified_after=args.get('modified_after')
-		)
+		if option in args
+	]
+
+	filepaths = filter_filepaths_by_dates(
+		filepaths,
+		creation_dates=creation_dates,
+		modification_dates=modification_dates,
+	)
 
 	filepaths = list(filepaths)
 
