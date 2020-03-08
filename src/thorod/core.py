@@ -1,9 +1,8 @@
 import functools
 import math
-import os
 import random
 from hashlib import md5, sha1
-from pathlib import Path, PurePath
+from pathlib import PurePath
 
 import pendulum
 from colorama import Fore
@@ -25,6 +24,7 @@ tqdm.format_sizeof = functools.partial(humanize_filesize, precision=2)
 
 
 def create_dir_info_dict(
+	base_path,
 	filepaths,
 	data_size,
 	piece_size,
@@ -33,8 +33,6 @@ def create_dir_info_dict(
 	include_md5,
 	show_progress=True,
 ):
-	base_path = Path(os.path.commonpath(filepaths))
-
 	info_dict = SortedDict()
 	file_infos = []
 	data = bytes()

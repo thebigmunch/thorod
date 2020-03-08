@@ -98,6 +98,7 @@ def do_create(args):
 
 	if args.input.is_dir():
 		info_dict = create_dir_info_dict(
+			args.input,
 			filepaths,
 			data_size,
 			piece_size,
