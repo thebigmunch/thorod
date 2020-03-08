@@ -24,11 +24,8 @@ DEFAULT_ABBRS = SortedDict(
 	}
 )
 
-default_trackers = list(DEFAULT_ABBRS.values())
-random.shuffle(default_trackers)
-
-DEFAULT_ABBRS['open'] = default_trackers
-DEFAULT_ABBRS['random'] = random.choice(default_trackers)
+DEFAULT_TRACKERS = list(DEFAULT_ABBRS.values())
+random.shuffle(DEFAULT_TRACKERS)
 
 
 B = 1024 ** 0

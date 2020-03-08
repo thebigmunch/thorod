@@ -224,7 +224,6 @@ def output_abbreviations(conf):
 		{
 			abbr: tracker
 			for abbr, tracker in DEFAULT_ABBRS.items()
-			if abbr not in ['open', 'random']
 		},
 		max_len
 	)

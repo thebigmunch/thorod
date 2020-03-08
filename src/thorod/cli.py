@@ -28,6 +28,7 @@ from .commands import (
 from .config import ABBRS, read_config_file
 from .constants import (
 	DEFAULT_ABBRS,
+	DEFAULT_TRACKERS,
 	PIECE_SIZE_STRINGS,
 )
 
@@ -59,14 +60,18 @@ def replace_abbreviations(value):
 	announce_list = []
 
 	def process_trackers(trackers):
-		tier_list = []
+		random_trackers = DEFAULT_TRACKERS.copy()
 
+		tier_list = []
 		for item in trackers:
 			if isinstance(item, list):
 				process_trackers(item)
 			elif item == 'open':
-				for tracker in ABBRS['open']:
+				for tracker in DEFAULT_TRACKERS:
 					announce_list.append([tracker])
+			elif item == 'random':
+
+				tier_list.append(random_trackers.pop())
 			else:
 				tier_list.append(ABBRS.get(item, item))
 
@@ -272,7 +277,7 @@ trackers_options.add_argument(
 	nargs='*',
 	help=(
 		"Tracker tiers are separated by a space.\n"
-		"Trackers on the same tier should be quoted and separated with a carat (^)\n\n"
+		"Trackers on the same tier are separated with a carat (^)\n\n"
 		"Example: 'tracker1^tracker2' tracker3"
 	)
 )
