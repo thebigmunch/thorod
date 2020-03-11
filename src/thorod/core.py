@@ -1,26 +1,16 @@
-import functools
-import math
-import random
 from hashlib import md5, sha1
-from pathlib import PurePath
 
-import pendulum
-from colorama import Fore
 from sortedcontainers import SortedDict
-from tbm_utils import humanize_filesize
-from tqdm import tqdm
 
 from . import bencode
-from .config import ABBRS, CONFIG_PATH
-from .constants import DEFAULT_ABBRS
+from .output import (
+	PROGRESS,
+	render,
+)
 from .utils import (
-	calculate_torrent_size,
 	generate_unique_string,
 	get_file_path,
-	hash_info_dict,
 )
-
-tqdm.format_sizeof = functools.partial(humanize_filesize, precision=2)
 
 
 def create_dir_info_dict(
@@ -31,65 +21,70 @@ def create_dir_info_dict(
 	private,
 	source,
 	include_md5,
+	*,
 	show_progress=True,
 ):
+	def hash_files(progress=None, task=None):
+		data = bytes()
+		file_infos = []
+		pieces = bytearray()
+
+		for filepath in filepaths:
+			file_dict = SortedDict()
+			length = 0
+
+			md5sum = md5() if include_md5 else None
+
+			with open(filepath, 'rb') as f:
+				while True:
+					piece = f.read(piece_size)
+
+					if not piece:
+						break
+
+					length += len(piece)
+
+					data += piece
+
+					if len(data) >= piece_size:
+						pieces += sha1(data[:piece_size]).digest()
+						data = data[piece_size:]
+
+					if include_md5:
+						md5sum.update(piece)
+
+					if progress:
+						progress.update(
+							task,
+							advance=len(piece),
+						)
+
+			file_dict['length'] = length
+			file_dict['path'] = get_file_path(filepath, base_path)
+
+			if include_md5:
+				file_dict['md5sum'] = md5sum.hexdigest()
+
+			file_infos.append(file_dict)
+
+		if len(data) > 0:
+			pieces += sha1(data).digest()
+
+		return file_infos, pieces
+
+	if show_progress:
+		render("\n Hashing Files\n\n", style="bold yellow")
+
+		with PROGRESS:
+			task = PROGRESS.add_task(
+				"Hashing",
+				total=data_size,
+			)
+			file_infos, pieces = hash_files(PROGRESS, task)
+	else:
+		file_infos, pieces = hash_files()
+
 	info_dict = SortedDict()
-	file_infos = []
-	data = bytes()
-	pieces = bytes()
-
-	if show_progress:
-		print("\n")
-		progress_bar = tqdm(
-			total=data_size,
-			unit='',
-			unit_scale=True,
-			leave=True,
-			dynamic_ncols=True,
-			bar_format='{percentage:3.0f}% |{bar}| {n_fmt}/{total_fmt} [{remaining} {rate_fmt}]',
-		)
-
-	for filepath in filepaths:
-		file_dict = SortedDict()
-		length = 0
-
-		md5sum = md5() if include_md5 else None
-
-		with open(filepath, 'rb') as f:
-			while True:
-				piece = f.read(piece_size)
-
-				if not piece:
-					break
-
-				length += len(piece)
-
-				data += piece
-
-				if len(data) >= piece_size:
-					pieces += sha1(data[:piece_size]).digest()
-					data = data[piece_size:]
-
-				if include_md5:
-					md5sum.update(piece)
-
-				if show_progress:
-					progress_bar.update(len(piece))
-
-		file_dict['length'] = length
-		file_dict['path'] = get_file_path(filepath, base_path)
-
-		if include_md5:
-			file_dict['md5sum'] = md5sum.hexdigest()
-
-		file_infos.append(file_dict)
-
-	if show_progress:
-		progress_bar.close()
-
-	if len(data) > 0:
-		pieces += sha1(data).digest()
-
 	info_dict['files'] = file_infos
 	info_dict['name'] = base_path.name
 	info_dict['pieces'] = pieces
@@ -113,43 +108,47 @@ def create_file_info_dict(
 	include_md5,
 	show_progress=True,
 ):
+	def hash_file(progress=None, task=None):
+		pieces = bytearray()
+		length = 0
+		md5sum = md5() if include_md5 else None
+
+		with open(filepaths[0], 'rb') as f:
+			while True:
+				piece = f.read(piece_size)
+
+				if not piece:
+					break
+
+				length += len(piece)
+
+				pieces += sha1(piece).digest()
+
+				if include_md5:
+					md5sum.update(piece)
+
+				if progress:
+					progress.update(
+						task,
+						advance=len(piece),
+					)
+
+		return pieces, length, md5sum
+
+	if show_progress:
+		render("\n Hashing Files\n\n", style="bold yellow")
+
+		with PROGRESS:
+			task = PROGRESS.add_task(
+				"Hashing",
+				total=data_size,
+			)
+
+			pieces, length, md5sum = hash_file(PROGRESS, task)
+	else:
+		pieces, length, md5sum = hash_file()
+
 	info_dict = SortedDict()
-	pieces = bytes()
-	length = 0
-
-	md5sum = md5() if include_md5 else None
-
-	if show_progress:
-		print("\n")
-		progress_bar = tqdm(
-			total=data_size,
-			unit='',
-			unit_scale=True,
-			leave=True,
-			dynamic_ncols=True,
-			bar_format='{percentage:3.0f}% |{bar}| {n_fmt}/{total_fmt} [{remaining} {rate_fmt}]',
-		)
-
-	with open(filepaths[0], 'rb') as f:
-		while True:
-			piece = f.read(piece_size)
-
-			if not piece:
-				break
-
-			length += len(piece)
-
-			pieces += sha1(piece).digest()
-
-			if include_md5:
-				md5sum.update(piece)
-
-			if show_progress:
-				progress_bar.update(len(piece))
-
-	if show_progress:
-		progress_bar.close()
-
 	info_dict['name'] = filepaths[0].name
 	info_dict['length'] = length
 	info_dict['pieces'] = pieces
@@ -165,177 +164,6 @@ def create_file_info_dict(
 		info_dict['md5sum'] = md5sum.hexdigest()
 
 	return info_dict
-
-
-def generate_magnet_link(torrent_info):
-	torrent_name = torrent_info['info']['name']
-	info_hash = hash_info_dict(torrent_info['info'])
-	data_size = calculate_torrent_size(torrent_info)
-
-	magnet_link = f'magnet:?dn={torrent_name}&xt=urn:btih:{info_hash}&xl={data_size}'
-
-	if 'announce-list' in torrent_info:
-		for tier in torrent_info['announce-list']:
-			magnet_link += f'&tr={random.choice(tier)}'
-	elif 'announce' in torrent_info:
-		magnet_link += f'&tr={torrent_info["announce"]}'
-
-	return magnet_link
-
-
-def output_abbreviations(conf):
-	def abbr_list(abbrs, max_len):
-		lines = []
-		for abbr, tracker in abbrs.items():
-			pad = max_len - len(abbr)
-			if isinstance(tracker, list):
-				line_ = []
-				line_.append(f"{Fore.CYAN}{abbr}:")
-				line_.append(f"{' ' * (pad + 1)}")
-				line_.append(
-					"\n".ljust(24 + pad).join(
-						f"{Fore.MAGENTA}{track}"
-						for track in tracker
-					)
-				)
-				line = "".join(line_)
-			else:
-				line = f"{Fore.CYAN}{abbr}: {' ' * pad}{Fore.MAGENTA}{tracker}"
-
-			lines.append(line)
-
-		return '\n'.ljust(17).join(lines)
-
-	max_len = len(
-		max(
-			(abbr for abbr in ABBRS),
-			key=len
-		)
-	)
-
-	auto_abbrs = abbr_list(
-		{
-			'open': "All default trackers in a random tiered order.",
-			'random': "A single random default tracker.",
-		},
-		max_len
-	)
-	default_abbrs = abbr_list(
-		{
-			abbr: tracker
-			for abbr, tracker in DEFAULT_ABBRS.items()
-		},
-		max_len
-	)
-	user_abbrs = abbr_list(conf['trackers'], max_len)
-
-	summary = (
-		f"\n"
-		f"{Fore.YELLOW}{'Config File'}:    {Fore.CYAN}{CONFIG_PATH}\n\n"
-		f"{Fore.YELLOW}{'Auto'}:           {auto_abbrs}\n\n"
-		f"{Fore.YELLOW}{'Default'}:        {default_abbrs}\n\n"
-		f"{Fore.YELLOW}{'User'}:           {user_abbrs}"
-	)
-
-	print(summary)
-
-
-def output_summary(torrent_info, show_files=False):
-	torrent_name = torrent_info['info']['name']
-	info_hash = hash_info_dict(torrent_info['info'])
-	private = 'Yes' if torrent_info['info'].get('private') == 1 else 'No'
-
-	announce_list = None
-	if 'announce-list' in torrent_info:
-		announce_list = torrent_info['announce-list']
-	elif 'announce' in torrent_info:
-		announce_list = [[torrent_info['announce']]]
-
-	if announce_list:
-		tracker_list = '\n\n'.ljust(18).join(
-			'\n'.ljust(17).join(
-				tracker
-				for tracker in tier
-			)
-			for tier in announce_list
-		)
-	else:
-		tracker_list = None
-
-	data_size = calculate_torrent_size(torrent_info)
-	piece_size = torrent_info['info']['piece length']
-	piece_count = math.ceil(data_size / piece_size)
-
-	tz = pendulum.tz.local_timezone()
-	creation_date = pendulum.from_timestamp(
-		torrent_info['creation date'],
-		tz
-	).format('YYYY-MM-DD HH:mm:ss Z')
-	created_by = torrent_info.get('created by', '')
-	comment = torrent_info.get('comment', '')
-	source = torrent_info.get('source', '')
-
-	magnet_link = generate_magnet_link(torrent_info)
-
-	summary = (
-		f"\n"
-		f"{Fore.YELLOW}{'Info Hash'}:      {Fore.CYAN}{info_hash}\n"
-		f"{Fore.YELLOW}{'Torrent Name'}:   {Fore.CYAN}{torrent_name}\n"
-		f"{Fore.YELLOW}{'Data Size'}:      {Fore.CYAN}{humanize_filesize(data_size, precision=2)}\n"
-		f"{Fore.YELLOW}{'Piece Size'}:     {Fore.CYAN}{humanize_filesize(piece_size)}\n"
-		f"{Fore.YELLOW}{'Piece Count'}:    {Fore.CYAN}{piece_count}\n"
-		f"{Fore.YELLOW}{'Private'}:        {Fore.CYAN}{private}\n"
-		f"{Fore.YELLOW}{'Creation Date'}:  {Fore.CYAN}{creation_date}\n"
-		f"{Fore.YELLOW}{'Created By'}:     {Fore.CYAN}{created_by}\n"
-		f"{Fore.YELLOW}{'Comment'}:        {Fore.CYAN}{comment}\n"
-		f"{Fore.YELLOW}{'Source'}:         {Fore.CYAN}{source}\n"
-		f"{Fore.YELLOW}{'Trackers'}:       {Fore.CYAN}{tracker_list}\n\n"
-		f"{Fore.YELLOW}{'Magnet'}:         {Fore.CYAN}{magnet_link}"
-	)
-
-	if show_files:
-		file_infos = []
-		if 'files' in torrent_info['info']:
-			for f in torrent_info['info']['files']:
-				file_infos.append(
-					(
-						humanize_filesize(f['length'], precision=2),
-						PurePath(*f['path']),
-					)
-				)
-		else:
-			file_infos.append(
-				(
-					humanize_filesize(
-						torrent_info['info']['length'], precision=2
-					),
-					PurePath(torrent_info['info']['name']),
-				)
-			)
-
-		num_pad = len(
-			max(
-				(size.split()[0] for size, _ in file_infos),
-				key=len
-			)
-		)
-		unit_pad = len(
-			max(
-				(size.split()[1] for size, _ in file_infos),
-				key=len
-			)
-		)
-
-		summary += f"\n\n{Fore.YELLOW}{'Files'}:\n\n"
-		for size, path in file_infos:
-			num, unit = size.split()
-			summary += " " * 4
-			summary += f"{Fore.WHITE}{num:>{num_pad}} "
-			summary += f"{Fore.WHITE}{unit:<{unit_pad}}"
-			summary += " " * 2
-			summary += f"{Fore.GREEN}{path}\n"
-
-	print(summary)
 
 
 def read_torrent_file(filepath):

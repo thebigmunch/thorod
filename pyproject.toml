@@ -24,10 +24,10 @@ attrs = ">=18.2,<19.4"
 colorama = "0.*"
 pendulum = ">=2.0,<=3.0,!=2.0.5,!=2.1.0"  # Work around https://github.com/sdispater/pendulum/issues/454
 pprintpp = "0.*"
+rich = ">=0.8"
 sortedcontainers = "^2.0"
-tbm-utils = "^2.3.0"
+tbm-utils = "^2.4"
 tomlkit = "^0.5"
-tqdm = "^4.19"
 
 flake8 = { version = "^3.5", optional = true }
 flake8-builtins = { version = "^1.0", optional = true }

@@ -15,12 +15,11 @@ This project adheres to [Semantic Versioning](https://semver.org).
 
 ### Changed
 
-* Neaten the files output with ``--show-files``.
-* Neaten the abbrs output.
 * Refactor ``open`` and ``random`` abbreviation implementation.
 	* Removed from constants.
 	* Implemented in ``replace_abbreviations`` function.
 	* This change allows multiple random trackers to be used in one call.
+* Improve output using [rich](https://github.com/willmcgugan/rich).
 
 ### Fixed
 

@@ -1,7 +1,6 @@
 import sys
 
 import pendulum
-from colorama import Fore
 from sortedcontainers import SortedDict
 from tbm_utils import (
 	filter_filepaths_by_dates,
@@ -15,11 +14,15 @@ from .config import (
 from .core import (
 	create_dir_info_dict,
 	create_file_info_dict,
-	generate_magnet_link,
-	output_abbreviations,
-	output_summary,
 	read_torrent_file,
 	write_torrent_file,
+)
+from .output import (
+	generate_abbreviations_outputs,
+	generate_magnet_link,
+	generate_magnet_outputs,
+	generate_summary_outputs,
+	render,
 )
 from .utils import (
 	calculate_data_size,
@@ -41,7 +44,8 @@ def do_abbrs(args):
 				pass
 
 	write_config_file(conf)
-	output_abbreviations(conf)
+	outputs = generate_abbreviations_outputs(conf)
+	render(outputs)
 
 
 def do_create(args):
@@ -138,22 +142,23 @@ def do_create(args):
 
 	write_torrent_file(args.output, torrent_info)
 
-	output_summary(torrent_info, show_files=args.show_files)
+	outputs = generate_summary_outputs(torrent_info, show_files=args.show_files)
+	render(outputs)
 
 
 def do_info(args):
 	torrent_info = read_torrent_file(args.torrent)
 
-	output_summary(torrent_info, show_files=args.show_files)
+	outputs = generate_summary_outputs(torrent_info, show_files=args.show_files)
+	render(outputs)
 
 
 def do_magnet(args):
 	torrent_info = read_torrent_file(args.torrent)
 	magnet_link = generate_magnet_link(torrent_info)
 
-	output = f"\n{Fore.Yellow}'Magnet':         {Fore.CYAN}{magnet_link}"
-
-	print(output)
+	outputs = generate_magnet_outputs(magnet_link)
+	render(outputs)
 
 
 def do_xseed(args):
@@ -202,4 +207,5 @@ def do_xseed(args):
 
 	write_torrent_file(args.output, torrent_info)
 
-	output_summary(torrent_info)
+	outputs = generate_summary_outputs(torrent_info)
+	render(outputs)
