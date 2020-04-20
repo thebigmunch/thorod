@@ -90,7 +90,7 @@ def generate_abbreviations_outputs(conf):
 		show_edge=False,
 	)
 	config_table.add_column(
-		'[bold yellow underline] File',
+		'[bold yellow underline]File',
 		style='cyan',
 	)
 	config_table.add_row(None)
