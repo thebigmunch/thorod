@@ -6,7 +6,12 @@ This project adheres to [Semantic Versioning](https://semver.org).
 
 ## [Unreleased](https://github.com/thebigmunch/thorod/tree/master)
 
-[Commits](https://github.com/thebigmunch/thorod/compare/2.0.0...master)
+[Commits](https://github.com/thebigmunch/thorod/compare/2.1.0...master)
+
+
+## [2.1.0](https://github.com/thebigmunch/thorod/releases/tag/2.1.0) (2020-05-01)
+
+[Commits](https://github.com/thebigmunch/thorod/compare/2.0.0...2.1.0)
 
 ### Added
 
