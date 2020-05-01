@@ -88,9 +88,10 @@ def generate_abbreviations_outputs(conf):
 		box=None,
 		show_footer=False,
 		show_edge=False,
+		header_style="bold yellow underline",
 	)
 	config_table.add_column(
-		'[bold yellow underline]File',
+		'File',
 		style='cyan',
 	)
 	config_table.add_row(None)
@@ -102,10 +103,11 @@ def generate_abbreviations_outputs(conf):
 		box=None,
 		show_footer=False,
 		show_edge=False,
+		header_style="bold yellow underline",
 	)
 
 	auto_abbrs_table.add_column(
-		'[bold yellow underline]Auto',
+		'Auto',
 		style='yellow',
 	)
 	auto_abbrs_table.add_column(style='cyan')
@@ -126,10 +128,11 @@ def generate_abbreviations_outputs(conf):
 		box=None,
 		show_footer=False,
 		show_edge=False,
+		header_style="bold yellow underline",
 	)
 
 	default_abbrs_table.add_column(
-		'[bold yellow underline]Default',
+		'Default',
 		style='yellow',
 	)
 	default_abbrs_table.add_column(style='cyan')
@@ -146,10 +149,11 @@ def generate_abbreviations_outputs(conf):
 			box=None,
 			show_footer=False,
 			show_edge=False,
+			header_style="bold yellow underline",
 		)
 
 		user_abbrs_table.add_column(
-			'[bold yellow underline]User',
+			'User',
 			style='yellow',
 		)
 		user_abbrs_table.add_column(style='cyan')
@@ -186,10 +190,11 @@ def generate_magnet_outputs(magnet_link):
 		box=None,
 		show_footer=False,
 		show_edge=False,
+		header_style="bold yellow underline",
 	)
 
 	magnet_table.add_column(
-		'[bold yellow underline]Magnet',
+		'Magnet',
 		style='cyan',
 	)
 
@@ -233,10 +238,11 @@ def generate_summary_outputs(torrent_info, show_files=False):
 		box=None,
 		show_footer=False,
 		show_edge=False,
+		header_style="bold yellow underline",
 	)
 
 	summary_table.add_column(
-		'[bold yellow underline]Summary',
+		'Summary',
 		style='yellow',
 		no_wrap=True,
 	)
@@ -261,9 +267,10 @@ def generate_summary_outputs(torrent_info, show_files=False):
 		box=None,
 		show_footer=False,
 		show_edge=False,
+		header_style="bold yellow underline",
 	)
 	tracker_table.add_column(
-		'[bold yellow underline]Trackers',
+		'Trackers',
 		style='yellow',
 		no_wrap=True,
 	)
@@ -322,9 +329,10 @@ def generate_summary_outputs(torrent_info, show_files=False):
 			box=None,
 			show_footer=False,
 			show_edge=False,
+			header_style="bold yellow underline",
 		)
 		files_table.add_column(
-			'[bold yellow underline]Files',
+			'Files',
 			style='yellow',
 			no_wrap=True,
 		)
