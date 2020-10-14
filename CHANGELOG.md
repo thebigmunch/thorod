@@ -4,9 +4,9 @@ Notable changes to this project based on the [Keep a Changelog](https://keepacha
 This project adheres to [Semantic Versioning](https://semver.org).
 
 
-## [Unreleased](https://github.com/thebigmunch/thorod/tree/master)
+## [Unreleased](https://github.com/thebigmunch/thorod/tree/main)
 
-[Commits](https://github.com/thebigmunch/thorod/compare/2.1.0...master)
+[Commits](https://github.com/thebigmunch/thorod/compare/2.1.0...main)
 
 
 ## [2.1.0](https://github.com/thebigmunch/thorod/releases/tag/2.1.0) (2020-05-01)

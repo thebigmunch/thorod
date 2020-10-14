@@ -26,7 +26,7 @@ Some linter errors may need to be ignored to accommodate these differences.
 ### Pull Requests
 
 [Pull Requests](https://help.github.com/articles/creating-a-pull-request) should originate from a
-[feature branch][fb] in your [fork][fork], not from the **master** branch.
+[feature branch][fb] in your [fork][fork], not from the **main** branch.
 
 Commit messages should be written in a
 [well-formed, consistent](https://sethrobertson.github.io/GitBestPractices/#usemsg) manner.
